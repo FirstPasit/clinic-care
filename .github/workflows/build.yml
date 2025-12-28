@@ -47,7 +47,7 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
 
       - name: Build Frontend with Trunk
-        run: trunk build --release
+        run: trunk build
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
