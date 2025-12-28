@@ -1,0 +1,24 @@
+[package]
+name = "clinic_care"
+version = "1.0.0"
+description = "ClinicCare - ระบบจัดการคลินิกสำหรับพยาบาล"
+authors = ["ClinicCare Team"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.9.5", features = ["devtools"] }
+tauri-plugin-log = "2"
+dirs = "6.0"  # For getting app data directory
+chrono = { version = "0.4", features = ["serde"] }

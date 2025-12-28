@@ -1,0 +1,23 @@
+pub mod home;
+pub mod register;
+pub mod search;
+pub mod treatment;
+pub mod history;
+pub mod not_found;
+pub mod document;
+pub mod drugs;
+pub mod sticker;
+pub mod report;
+pub mod settings;
+
+pub use home::Home;
+pub use register::Register;
+pub use search::Search;
+pub use treatment::Treatment;
+pub use history::History;
+pub use not_found::NotFound;
+pub use document::Document;
+pub use drugs::Drugs;
+pub use sticker::Sticker;
+pub use report::Report;
+pub use settings::Settings;

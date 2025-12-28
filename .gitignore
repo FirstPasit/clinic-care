@@ -1,0 +1,20 @@
+# Rust
+/target
+/dist
+**/*.rs.bk
+
+# Tauri
+/src-tauri/target
+
+# IDE settings
+.vscode
+.idea
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if any)
+node_modules
+npm-debug.log

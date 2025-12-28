@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClinicCare - ระบบจัดการคลินิก</title>
+
+  <!-- Thai Fonts - Kanit & Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link data-trunk rel="rust" href="Cargo.toml" />
+  <link data-trunk rel="css" href="style.css" />
+  <link data-trunk rel="copy-dir" href="assets" />
+
+  <script>
+    // ClinicCare Data Sync - Syncs localStorage with Tauri file storage
+    (function () {
+      const STORAGE_KEYS = [
+        'clinic_patients',
+        'clinic_records',
+        'clinic_drugs',
+        'clinic_settings',
+        'clinic_last_hn'
+      ];
+
+      // Check if running in Tauri
+      function isTauri() {
+        return window.__TAURI__ !== undefined;
+      }
+
+      // Load data from file and populate localStorage
+      async function loadFromFile() {
+        if (!isTauri()) return;
+
+        try {
+          const { invoke } = window.__TAURI__.core;
+          const data = await invoke('load_clinic_data');
+
+          if (data && data !== '{}') {
+            const parsed = JSON.parse(data);
+            for (const key of STORAGE_KEYS) {
+              if (parsed[key] !== undefined) {
+                localStorage.setItem(key, JSON.stringify(parsed[key]));
+              }
+            }
+            console.log('✅ ClinicCare: Data loaded from file');
+          }
+        } catch (e) {
+          console.error('Failed to load data from file:', e);
+        }
+      }
+
+      // Save localStorage data to file
+      async function saveToFile() {
+        if (!isTauri()) return;
+
+        try {
+          const { invoke } = window.__TAURI__.core;
+          const data = {};
+
+          for (const key of STORAGE_KEYS) {
+            const value = localStorage.getItem(key);
+            if (value) {
+              try {
+                data[key] = JSON.parse(value);
+              } catch {
+                data[key] = value;
+              }
+            }
+          }
+
+          await invoke('save_clinic_data', { data: JSON.stringify(data) });
+          console.log('💾 ClinicCare: Data saved to file');
+        } catch (e) {
+          console.error('Failed to save data to file:', e);
+        }
+      }
+
+      // Monitor localStorage changes and auto-save
+      function setupAutoSave() {
+        if (!isTauri()) return;
+
+        // Override localStorage.setItem to auto-save
+        const originalSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function (key, value) {
+          originalSetItem(key, value);
+
+          // Debounce save - wait 500ms after last change
+          clearTimeout(window._clinicSaveTimeout);
+          window._clinicSaveTimeout = setTimeout(saveToFile, 500);
+        };
+
+        // Also save when window is about to close
+        window.addEventListener('beforeunload', saveToFile);
+
+        console.log('🔄 ClinicCare: Auto-save enabled');
+      }
+
+      // Initialize on load
+      window.addEventListener('DOMContentLoaded', async () => {
+        if (isTauri()) {
+          await loadFromFile();
+          setupAutoSave();
+        }
+      });
+    })();
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>
