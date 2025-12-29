@@ -18,3 +18,7 @@ Thumbs.db
 # Node (if any)
 node_modules
 npm-debug.log
+
+# Security
+tauri.key
+tauri.key.pub
