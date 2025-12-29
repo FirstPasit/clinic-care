@@ -8,6 +8,14 @@
     "devUrl": "http://localhost:8088",
     "beforeBuildCommand": "trunk build"
   },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/FirstPasit/clinic-care/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMwMzkyNDQ1Qjg4OTBERUIKUldUckRZbTRSU1E1TUhnamVCYUlRUkVpNUIwMlhRcFViSU1scURXZU8rdjlmRlU3Z0p3Wm93OXoK"
+    }
+  },
   "app": {
     "windows": [
       {
