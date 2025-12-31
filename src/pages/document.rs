@@ -313,7 +313,7 @@ pub fn document(props: &Props) -> Html {
                     // Main Content
                     <div style="margin-bottom: 1.5rem; font-size: 1rem; line-height: 2;">
                         <div style="margin-bottom: 0.5rem;">
-                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์ ให้แก่ " }
+                            { "ได้ทำการรักษาพยาบาลให้แก่ " }
                             <span style="border-bottom: 1px dotted #000; padding: 0 10px; font-weight: bold;">
                                 { format!("{}{} {}", p.title, p.first_name, p.last_name) }
                             </span>
