@@ -2,6 +2,7 @@ use yew::prelude::*;
 use crate::store::Store;
 use chrono::prelude::*;
 use gloo::timers::callback::Timeout;
+use yew_router::prelude::use_navigator;
 
 #[derive(Clone, PartialEq)]
 pub enum Language {
@@ -119,6 +120,7 @@ pub struct Props {
 pub fn sticker(props: &Props) -> Html {
     let size = use_state(|| "large".to_string());
     let language = use_state(|| Language::Thai);
+    let navigator = use_navigator().unwrap();
     
     // Auto print
     use_effect_with((), move |_| {
@@ -205,11 +207,16 @@ pub fn sticker(props: &Props) -> Html {
                 </div>
                 
                 // Print button
-                <button class="btn btn-success btn-lg" style="width: 100%; max-width: 400px;" onclick={|_| {
-                    let _ = web_sys::window().unwrap().print();
-                }}>
-                    { "🖨️ พิมพ์สติกเกอร์" }
-                </button>
+                <div style="display: flex; gap: 10px; max-width: 400px;">
+                    <button class="btn btn-secondary btn-lg" style="flex: 1;" onclick={move |_| navigator.back()}>
+                        { "← ย้อนกลับ" }
+                    </button>
+                    <button class="btn btn-success btn-lg" style="flex: 2;" onclick={|_| {
+                        let _ = web_sys::window().unwrap().print();
+                    }}>
+                        { "🖨️ พิมพ์สติกเกอร์" }
+                    </button>
+                </div>
             </div>
             
             // Sticker Preview - New Format with Checkboxes

@@ -2,7 +2,7 @@ use yew::prelude::*;
 use crate::models::Patient;
 use crate::store::Store;
 use chrono::prelude::*;
-use yew_router::prelude::Link;
+use yew_router::prelude::{Link, use_navigator};
 use crate::Route;
 
 #[derive(Properties, PartialEq)]
@@ -12,6 +12,8 @@ pub struct Props {
 
 #[function_component(History)]
 pub fn history(props: &Props) -> Html {
+    let navigator = use_navigator().unwrap();
+    
     let patient = use_state(|| -> Option<Patient> {
         Store::get_patients().into_iter().find(|p| p.id == props.id)
     });
@@ -46,6 +48,18 @@ pub fn history(props: &Props) -> Html {
                     <p class="page-subtitle">{ format!("{}{} {} • HN: {}", p.title, p.first_name, p.last_name, p.hn) }</p>
                 </div>
                 <div class="flex gap-3">
+                    <button class="btn btn-danger" onclick={
+                        let id = props.id.clone();
+                        let navigator = navigator.clone();
+                        move |_| {
+                            if web_sys::window().unwrap().confirm_with_message("⚠️ ยืนยันการลบข้อมูลผู้ป่วยและประวัติทั้งหมด? (ไม่สามารถกู้คืนได้)").unwrap() {
+                                Store::delete_patient(&id);
+                                navigator.push(&Route::Search);
+                            }
+                        }
+                    }>
+                        { "🗑️ ลบ" }
+                    </button>
                     <Link<Route> to={Route::Search} classes="btn btn-secondary btn-lg">
                         { "← กลับ" }
                     </Link<Route>>
@@ -74,6 +88,8 @@ pub fn history(props: &Props) -> Html {
                         { for sorted_records.iter().map(|r| {
                             let date_str = r.date.with_timezone(&Local).format("%d/%m/%Y เวลา %H:%M น.").to_string();
                             let id = r.id.clone();
+                            let navigator = navigator.clone(); // Clone for this iteration
+                            
                             html! {
                                 <div class="history-item">
                                     <div class="history-item-header">
@@ -93,11 +109,13 @@ pub fn history(props: &Props) -> Html {
                                     </div>
                                     
                                     { if !r.prescriptions.is_empty() {
+                                        let navigator = navigator.clone(); // Clone for rx list
                                         html! {
                                             <div class="history-item-rx">
                                                 <div class="history-item-label">{ "💊 รายการยา" }</div>
                                                 <ul style="padding-left: 1.5rem; margin: 0.5rem 0 0;">
                                                     { for r.prescriptions.iter().enumerate().map(|(idx, rx)| {
+                                                        let navigator = navigator.clone(); // Clone for this item
                                                         let record_id = id.clone();
                                                         html! {
                                                             <li style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
@@ -115,8 +133,7 @@ pub fn history(props: &Props) -> Html {
                                                                     } else { html! {} }}
                                                                 </div>
                                                                 <button class="btn btn-secondary btn-sm" onclick={move |_| {
-                                                                    let url = format!("/sticker/{}/{}", record_id, idx);
-                                                                    let _ = web_sys::window().unwrap().open_with_url_and_target(&url, "_blank");
+                                                                    navigator.push(&Route::Sticker { record_id: record_id.clone(), drug_index: idx });
                                                                 }}>
                                                                     { "🏷️ พิมพ์สติกเกอร์" }
                                                                 </button>
@@ -130,21 +147,18 @@ pub fn history(props: &Props) -> Html {
                                     
                                     // Action buttons
                                     <div class="history-item-actions">
-                                        <button class="btn btn-secondary" onclick={let id=id.clone(); move |_| {
-                                            let url = format!("/document/receipt/{}", id);
-                                            let _ = web_sys::window().unwrap().open_with_url_and_target(&url, "_blank");
+                                        <button class="btn btn-secondary" onclick={let navigator = navigator.clone(); let id=id.clone(); move |_| {
+                                            navigator.push(&Route::Document { doc_type: "receipt".to_string(), id: id.clone() });
                                         }}>
                                             { "🧾 ใบเสร็จ" }
                                         </button>
-                                        <button class="btn btn-secondary" onclick={let id=id.clone(); move |_| {
-                                            let url = format!("/document/prescription/{}", id);
-                                            let _ = web_sys::window().unwrap().open_with_url_and_target(&url, "_blank");
+                                        <button class="btn btn-secondary" onclick={let navigator = navigator.clone(); let id=id.clone(); move |_| {
+                                            navigator.push(&Route::Document { doc_type: "prescription".to_string(), id: id.clone() });
                                         }}>
                                             { "📋 ใบสั่งยา" }
                                         </button>
-                                        <button class="btn btn-secondary" onclick={let id=id.clone(); move |_| {
-                                            let url = format!("/document/cert/{}", id);
-                                            let _ = web_sys::window().unwrap().open_with_url_and_target(&url, "_blank");
+                                        <button class="btn btn-secondary" onclick={let navigator = navigator.clone(); let id=id.clone(); move |_| {
+                                            navigator.push(&Route::Document { doc_type: "cert".to_string(), id: id.clone() });
                                         }}>
                                             { "📄 ใบรับรองแพทย์" }
                                         </button>

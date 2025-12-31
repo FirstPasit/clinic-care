@@ -129,6 +129,13 @@ pub fn treatment(props: &Props) -> Html {
                         <span>{ format!("กรุ๊ปเลือด: {}", patient_data.blood_group) }</span>
                     </div>
                 </div>
+                { if !patient_data.underlying_disease.is_empty() && patient_data.underlying_disease != "ไม่มี" {
+                    html! {
+                        <div style="color: #ea580c; background: #fff7ed; border: 1px solid #fdba74; padding: 0.5rem; border-radius: 4px; margin-right: 1rem;">
+                            { "🤕 โรคประจำตัว: " }<strong>{ &patient_data.underlying_disease }</strong>
+                        </div>
+                    }
+                } else { html! {} }}
                 { if !patient_data.drug_allergy.is_empty() && patient_data.drug_allergy.to_lowercase() != "none" && patient_data.drug_allergy != "ไม่มี" {
                     html! {
                         <div class="patient-header-allergy">

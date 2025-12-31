@@ -22,6 +22,22 @@ impl Store {
         let _ = LocalStorage::set(KEY_PATIENTS, patients);
     }
     
+    pub fn delete_patient(patient_id: &str) {
+        // 1. Delete Patient
+        let patients: Vec<Patient> = Self::get_patients()
+            .into_iter()
+            .filter(|p| p.id != patient_id)
+            .collect();
+        let _ = LocalStorage::set(KEY_PATIENTS, patients);
+
+        // 2. Delete Related Records
+        let records: Vec<TreatmentRecord> = Self::get_records()
+            .into_iter()
+            .filter(|r| r.patient_id != patient_id)
+            .collect();
+        let _ = LocalStorage::set(KEY_RECORDS, records);
+    }
+    
 
 
     // ========== Treatment Records ==========

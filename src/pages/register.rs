@@ -22,21 +22,20 @@ pub fn register() -> Html {
     let toast = use_context::<ToastContext>();
     
     // Form state
-    let hn = use_state(|| Store::next_hn());
+    let hn = use_state(|| String::new()); // No longer default, manual entry
     let citizen_id = use_state(|| String::new());
     let title = use_state(|| "นาย".to_string());
     let first_name = use_state(|| String::new());
     let last_name = use_state(|| String::new());
     let birth_date = use_state(|| String::new());
-    let blood_group = use_state(|| "A".to_string());
+    let blood_group = use_state(|| "ไม่ทราบ".to_string());
+    let underlying_disease = use_state(|| String::new());
     let drug_allergy = use_state(|| String::new());
     let phone = use_state(|| String::new());
     let address = use_state(|| String::new());
     
     // Validation states
-    let citizen_id_valid = (*citizen_id).len() == 13;
-    let phone_valid = (*phone).len() == 10;
-    let form_valid = citizen_id_valid && !(*first_name).is_empty() && !(*last_name).is_empty();
+    let form_valid = !(*hn).is_empty() && !(*first_name).is_empty() && !(*last_name).is_empty();
 
     let onsubmit = {
         let hn = hn.clone();
@@ -46,6 +45,7 @@ pub fn register() -> Html {
         let last_name = last_name.clone();
         let birth_date = birth_date.clone();
         let blood_group = blood_group.clone();
+        let underlying_disease = underlying_disease.clone();
         let drug_allergy = drug_allergy.clone();
         let phone = phone.clone();
         let address = address.clone();
@@ -55,18 +55,23 @@ pub fn register() -> Html {
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             
-            // Validate citizen ID
-            if (*citizen_id).len() != 13 {
-                if let Some(ref t) = toast {
+            // Check if HN already exists (simple check)
+            let existing_patients = Store::get_patients();
+            if existing_patients.iter().any(|p| p.hn == *hn) {
+                 if let Some(ref t) = toast {
                     t.dispatch(ToastAction::Add(
-                        "❌ กรุณากรอกเลขบัตรประชาชน 13 หลัก".to_string(),
+                        "❌ เลข HN นี้มีในระบบแล้ว".to_string(),
                         ToastType::Error
                     ));
                 }
                 return;
             }
             
-            let bd = chrono::NaiveDate::parse_from_str(&birth_date, "%Y-%m-%d").ok();
+            let bd = if (*birth_date).is_empty() {
+                None
+            } else {
+                chrono::NaiveDate::parse_from_str(&birth_date, "%Y-%m-%d").ok()
+            };
             
             let new_patient = Patient {
                 id: Uuid::new_v4().to_string(),
@@ -77,6 +82,7 @@ pub fn register() -> Html {
                 last_name: (*last_name).clone(),
                 birth_date: bd,
                 blood_group: (*blood_group).clone(),
+                underlying_disease: (*underlying_disease).clone(),
                 drug_allergy: (*drug_allergy).clone(),
                 phone: (*phone).clone(),
                 address: (*address).clone(),
@@ -107,10 +113,18 @@ pub fn register() -> Html {
                 <form onsubmit={onsubmit}>
                     <div class="grid grid-cols-2 gap-4">
                         // HN
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label class="form-label">{ "เลข HN (สร้างอัตโนมัติ)" }</label>
-                            <input type="text" value={(*hn).clone()} readonly=true 
-                                style="background: var(--color-bg); font-weight: bold; font-family: monospace;" />
+                        <div class="form-group">
+                            <label class="form-label">{ "เลข HN * (กรอกตามบัตร)" }</label>
+                            <input type="text" value={(*hn).clone()} required=true
+                                placeholder="เช่น 66001"
+                                style="font-weight: bold; font-family: monospace;" 
+                                oninput={
+                                    let hn = hn.clone();
+                                    Callback::from(move |e: InputEvent| {
+                                        let input: HtmlInputElement = e.target_unchecked_into();
+                                        hn.set(input.value());
+                                    })
+                                } />
                         </div>
                         
                         // Title
@@ -129,37 +143,6 @@ pub fn register() -> Html {
                                 <option value="เด็กชาย">{ "เด็กชาย" }</option>
                                 <option value="เด็กหญิง">{ "เด็กหญิง" }</option>
                             </select>
-                        </div>
-                        
-                        // Citizen ID - EXACTLY 13 DIGITS
-                        <div class="form-group">
-                            <label class="form-label">
-                                { "เลขบัตรประชาชน " }
-                                <span class={if citizen_id_valid { "badge badge-success" } else { "badge badge-warning" }}>
-                                    { format!("{}/13 หลัก", (*citizen_id).len()) }
-                                </span>
-                            </label>
-                            <input 
-                                type="text" 
-                                inputmode="numeric"
-                                pattern="[0-9]*"
-                                maxlength="13"
-                                value={(*citizen_id).clone()}
-                                placeholder="กรอกเลข 13 หลัก"
-                                class={if !citizen_id_valid && !(*citizen_id).is_empty() { "input-error" } else { "" }}
-                                oninput={
-                                    let citizen_id = citizen_id.clone();
-                                    Callback::from(move |e: InputEvent| {
-                                        let input: HtmlInputElement = e.target_unchecked_into();
-                                        // Only allow digits, max 13
-                                        let filtered = digits_max(&input.value(), 13);
-                                        citizen_id.set(filtered.clone());
-                                        input.set_value(&filtered);
-                                    })
-                                } />
-                            { if !citizen_id_valid && !(*citizen_id).is_empty() {
-                                html! { <span class="form-error">{ "⚠️ ต้องครบ 13 หลัก" }</span> }
-                            } else { html! {} }}
                         </div>
                         
                         // First Name
@@ -189,10 +172,29 @@ pub fn register() -> Html {
                                     })
                                 } />
                         </div>
-                        
-                        // Birth Date
+
+                        // Citizen ID (Optional)
                         <div class="form-group">
-                            <label class="form-label">{ "วันเกิด" }</label>
+                            <label class="form-label">{ "เลขบัตรประชาชน (ไม่บังคับ)" }</label>
+                            <input type="text" 
+                                maxlength="13"
+                                value={(*citizen_id).clone()}
+                                placeholder="กรอกเลข 13 หลัก (ถ้ามี)"
+                                oninput={
+                                    let citizen_id = citizen_id.clone();
+                                    Callback::from(move |e: InputEvent| {
+                                        let input: HtmlInputElement = e.target_unchecked_into();
+                                        // Only allow digits, max 13
+                                        let filtered = digits_max(&input.value(), 13);
+                                        citizen_id.set(filtered.clone());
+                                        input.set_value(&filtered);
+                                    })
+                                } />
+                        </div>
+                        
+                        // Birth Date (Optional)
+                        <div class="form-group">
+                            <label class="form-label">{ "วันเกิด (ไม่บังคับ)" }</label>
                             <input type="date" value={(*birth_date).clone()}
                                 oninput={
                                     let birth_date = birth_date.clone();
@@ -213,6 +215,7 @@ pub fn register() -> Html {
                                     blood_group.set(input.value());
                                 })
                             }>
+                                <option value="ไม่ทราบ">{ "ไม่ทราบ" }</option>
                                 <option value="A">{ "A" }</option>
                                 <option value="B">{ "B" }</option>
                                 <option value="AB">{ "AB" }</option>
@@ -220,22 +223,10 @@ pub fn register() -> Html {
                             </select>
                         </div>
                         
-                        // Phone - EXACTLY 10 DIGITS
+                        // Phone (Optional)
                         <div class="form-group">
-                            <label class="form-label">
-                                { "เบอร์โทรศัพท์ " }
-                                { if !(*phone).is_empty() {
-                                    html! {
-                                        <span class={if phone_valid { "badge badge-success" } else { "badge badge-warning" }}>
-                                            { format!("{}/10 หลัก", (*phone).len()) }
-                                        </span>
-                                    }
-                                } else { html! {} }}
-                            </label>
-                            <input 
-                                type="tel" 
-                                inputmode="numeric"
-                                pattern="[0-9]*"
+                            <label class="form-label">{ "เบอร์โทรศัพท์" }</label>
+                            <input type="tel" 
                                 maxlength="10"
                                 value={(*phone).clone()}
                                 placeholder="08X-XXX-XXXX"
@@ -253,11 +244,11 @@ pub fn register() -> Html {
                         // Drug Allergy
                         <div class="form-group">
                             <label class="form-label">
-                                { "แพ้ยา " }
-                                <span class="badge badge-error">{ "สำคัญ" }</span>
+                                { "แพ้ยา" }
+                                <span class="badge badge-error" style="margin-left: 5px;">{ "สำคัญ" }</span>
                             </label>
                             <input type="text" value={(*drug_allergy).clone()}
-                                placeholder="เช่น Penicillin, Aspirin หรือ ไม่มี"
+                                placeholder="ระบุชื่อยาที่แพ้ หรือ 'ไม่มี'"
                                 oninput={
                                     let drug_allergy = drug_allergy.clone();
                                     Callback::from(move |e: InputEvent| {
@@ -266,12 +257,26 @@ pub fn register() -> Html {
                                     })
                                 } />
                         </div>
+
+                        // Underlying Disease (NEW)
+                        <div class="form-group">
+                            <label class="form-label">{ "โรคประจำตัว" }</label>
+                            <input type="text" value={(*underlying_disease).clone()}
+                                placeholder="เช่น เบาหวาน, ความดัน (ถ้ามี)"
+                                oninput={
+                                    let underlying_disease = underlying_disease.clone();
+                                    Callback::from(move |e: InputEvent| {
+                                        let input: HtmlInputElement = e.target_unchecked_into();
+                                        underlying_disease.set(input.value());
+                                    })
+                                } />
+                        </div>
                         
                         // Address
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label class="form-label">{ "ที่อยู่" }</label>
                             <textarea value={(*address).clone()}
-                                placeholder="กรอกที่อยู่"
+                                placeholder="กรอกที่อยู่ (ถ้ามี)"
                                 oninput={
                                     let address = address.clone();
                                     Callback::from(move |e: InputEvent| {

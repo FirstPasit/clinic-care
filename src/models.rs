@@ -10,7 +10,10 @@ pub struct Patient {
     pub first_name: String,
     pub last_name: String,
     pub birth_date: Option<NaiveDate>,
+    #[serde(default)]
     pub blood_group: String,
+    #[serde(default)]
+    pub underlying_disease: String, // โรคประจำตัว
     pub drug_allergy: String,
     pub phone: String,
     pub address: String,
@@ -143,7 +146,7 @@ impl Default for ClinicSettings {
         Self {
             clinic_name: "ญ.หญิงคลินิกการพยาบาลและการผดุงครรภ์".to_string(),
             clinic_address: "83/9 หมู่ 7 ต.กุยบุรี อ.กุยบุรี จ.ประจวบคีรีขันธ์".to_string(),
-            clinic_phone: "".to_string(),
+            clinic_phone: "081-014-1551".to_string(),
             clinic_tax_id: "".to_string(),
             staff_name: "นางสมหญิง วีระจินตนา".to_string(),
             staff_position: "พยาบาลวิชาชีพชำนาญการ".to_string(),
