@@ -8,9 +8,20 @@ use uuid::Uuid;
 use yew_router::prelude::*;
 use crate::Route;
 
+const SERVICE_FEE: f64 = 50.0; // ค่าบริการทางการพยาบาล fix
+
 #[derive(Properties, PartialEq)]
 pub struct Props {
     pub id: String,
+}
+
+// Helper function to parse amount like "10 เม็ด" -> 10
+fn parse_quantity(amount_str: &str) -> f64 {
+    // Try to extract number from string like "10 เม็ด", "5", "20 ซอง"
+    let digits: String = amount_str.chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    digits.parse::<f64>().unwrap_or(0.0)
 }
 
 #[function_component(Treatment)]
@@ -44,29 +55,69 @@ pub fn treatment(props: &Props) -> Html {
     let weight = use_state(|| String::new());
     let pressure = use_state(|| String::new());
     let doctor_note = use_state(|| String::new());
-    let price = use_state(|| String::new());
+    let manual_price_override = use_state(|| false); // Flag for manual override
     
     // Dynamic lists
     let prescriptions = use_state(|| Vec::<PrescriptionItem>::new());
     let _injections = use_state(|| Vec::<InjectionItem>::new());
 
+    // Calculate total price automatically
+    let calculated_drug_cost = {
+        let drug_list = drug_list.clone();
+        let prescriptions = (*prescriptions).clone();
+        
+        prescriptions.iter().map(|rx| {
+            // Find drug in inventory by name
+            let drug = drug_list.iter().find(|d| d.name == rx.name);
+            let unit_price = drug.map(|d| d.sell_price).unwrap_or(0.0);
+            let quantity = parse_quantity(&rx.amount);
+            unit_price * quantity
+        }).sum::<f64>()
+    };
+    
+    let calculated_total = SERVICE_FEE + calculated_drug_cost;
+    
+    // Use calculated price unless manually overridden
+    let final_price = use_state(|| 0.0_f64);
+    
+    // Update final price when prescriptions change (unless manual override)
+    {
+        let final_price = final_price.clone();
+        let manual_override = *manual_price_override;
+        let calc_total = calculated_total;
+        
+        use_effect_with(
+            (prescriptions.clone(), manual_override),
+            move |(_, override_flag)| {
+                if !*override_flag {
+                    final_price.set(calc_total);
+                }
+                || ()
+            }
+        );
+    }
+
     // Handlers
     let add_drug = {
         let prescriptions = prescriptions.clone();
+        let manual_price_override = manual_price_override.clone();
         Callback::from(move |_: MouseEvent| {
             let mut current = (*prescriptions).clone();
             current.push(PrescriptionItem::default());
             prescriptions.set(current);
+            manual_price_override.set(false); // Reset override when adding drugs
         })
     };
 
     let remove_drug = {
         let prescriptions = prescriptions.clone();
+        let manual_price_override = manual_price_override.clone();
         Callback::from(move |idx: usize| {
             let mut current = (*prescriptions).clone();
             if idx < current.len() {
                 current.remove(idx);
                 prescriptions.set(current);
+                manual_price_override.set(false); // Reset override
             }
         })
     };
@@ -78,7 +129,7 @@ pub fn treatment(props: &Props) -> Html {
         let weight = weight.clone();
         let pressure = pressure.clone();
         let doctor_note = doctor_note.clone();
-        let price = price.clone();
+        let final_price = final_price.clone();
         let prescriptions = prescriptions.clone();
         let navigator = navigator.clone();
         let toast = toast.clone();
@@ -97,7 +148,7 @@ pub fn treatment(props: &Props) -> Html {
                 prescriptions: (*prescriptions).clone(),
                 injections: vec![],
                 doctor_note: (*doctor_note).clone(),
-                price: price.parse::<f64>().unwrap_or(0.0),
+                price: *final_price,
             };
             
             Store::save_record(record);
@@ -203,17 +254,44 @@ pub fn treatment(props: &Props) -> Html {
                             <div class="prescription-list">
                                 { for prescriptions.iter().enumerate().map(|(i, item)| {
                                     let prescriptions_for_update = prescriptions.clone();
+                                    let prescriptions_for_update2 = prescriptions.clone();
+                                    let manual_override_clone = manual_price_override.clone();
                                     let remove = remove_drug.clone();
                                     let drug_list_clone = drug_list.clone();
+                                    let drug_list_clone2 = drug_list.clone();
+                                    
+                                    // Get current drug price for display
+                                    let current_drug = drug_list_clone2.iter().find(|d| d.name == item.name);
+                                    let unit_price = current_drug.map(|d| d.sell_price).unwrap_or(0.0);
+                                    let quantity = parse_quantity(&item.amount);
+                                    let line_total = unit_price * quantity;
                                     
                                     html! {
                                         <div class="card" style="background: var(--color-bg); margin-bottom: 1rem;">
-                                            // Drug header
+                                            // Drug header with price info
                                             <div class="flex justify-between items-center mb-4">
-                                                <h4 style="margin: 0;">{ format!("ยาตัวที่ {}", i + 1) }</h4>
-                                                <button type="button" onclick={move |_| remove.emit(i)} class="btn btn-danger btn-sm">
-                                                    { "🗑️ ลบ" }
-                                                </button>
+                                                <div>
+                                                    <h4 style="margin: 0;">{ format!("ยาตัวที่ {}", i + 1) }</h4>
+                                                    { if unit_price > 0.0 {
+                                                        html! {
+                                                            <span style="font-size: 0.85rem; color: #059669;">
+                                                                { format!("💰 ราคา {} บาท/{}", unit_price, current_drug.map(|d| d.unit.as_str()).unwrap_or("หน่วย")) }
+                                                            </span>
+                                                        }
+                                                    } else { html! {} }}
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    { if line_total > 0.0 {
+                                                        html! {
+                                                            <span style="background: #dcfce7; color: #166534; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: bold;">
+                                                                { format!("= {} บาท", line_total) }
+                                                            </span>
+                                                        }
+                                                    } else { html! {} }}
+                                                    <button type="button" onclick={move |_| remove.emit(i)} class="btn btn-danger btn-sm">
+                                                        { "🗑️ ลบ" }
+                                                    </button>
+                                                </div>
                                             </div>
                                             
                                             // Drug name with datalist
@@ -223,12 +301,14 @@ pub fn treatment(props: &Props) -> Html {
                                                     placeholder="พิมพ์ชื่อยา หรือเลือกจากรายการ"
                                                     oninput={{
                                                         let prescriptions = prescriptions_for_update.clone();
+                                                        let manual_override = manual_override_clone.clone();
                                                         move |e: InputEvent| {
                                                             let mut current = (*prescriptions).clone();
                                                             if let Some(rx) = current.get_mut(i) {
                                                                 rx.name = e.target_unchecked_into::<HtmlInputElement>().value();
                                                             }
                                                             prescriptions.set(current);
+                                                            manual_override.set(false); // Recalculate price
                                                         }
                                                     }} />
                                                 <datalist id={format!("drugs-{}", i)}>
@@ -320,16 +400,18 @@ pub fn treatment(props: &Props) -> Html {
                                                     </select>
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="form-label">{ "จำนวนทั้งหมด" }</label>
-                                                    <input type="text" value={item.amount.clone()} placeholder="เช่น 20 เม็ด"
+                                                    <label class="form-label">{ "จำนวนทั้งหมด (ใส่ตัวเลขก่อน)" }</label>
+                                                    <input type="text" value={item.amount.clone()} placeholder="เช่น 10 เม็ด, 1 ขวด"
                                                         oninput={{
-                                                            let prescriptions = prescriptions_for_update.clone();
+                                                            let prescriptions = prescriptions_for_update2.clone();
+                                                            let manual_override = manual_override_clone.clone();
                                                             move |e: InputEvent| {
                                                                 let mut current = (*prescriptions).clone();
                                                                 if let Some(rx) = current.get_mut(i) {
                                                                     rx.amount = e.target_unchecked_into::<HtmlInputElement>().value();
                                                                 }
                                                                 prescriptions.set(current);
+                                                                manual_override.set(false); // Recalculate
                                                             }
                                                         }} />
                                                 </div>
@@ -359,28 +441,94 @@ pub fn treatment(props: &Props) -> Html {
                     }}
                 </div>
                 
-                // Notes & Price
-                <div class="card mb-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label class="form-label">{ "📝 หมายเหตุแพทย์ " } <span class="form-label-optional">{ "(ถ้ามี)" }</span></label>
-                            <textarea value={(*doctor_note).clone()} placeholder="หมายเหตุเพิ่มเติม..."
-                                oninput={let n = doctor_note.clone(); Callback::from(move |e: InputEvent| n.set(e.target_unchecked_into::<HtmlInputElement>().value()))} />
-                        </div>
+                // Price Calculation Summary Card
+                <div class="card mb-6" style="border: 2px solid #059669; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);">
+                    <div class="card-header">
+                        <h3 class="card-title" style="color: #065f46;">{ "💰 สรุปค่าใช้จ่าย (คำนวณอัตโนมัติ)" }</h3>
+                    </div>
+                    
+                    <div style="padding: 1rem;">
+                        // Price Breakdown
+                        <table style="width: 100%; margin-bottom: 1rem;">
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #a7f3d0;">
+                                    <td style="padding: 0.5rem 0;">{ "ค่าบริการทางการพยาบาล" }</td>
+                                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 500;">
+                                        { format!("{:.2} บาท", SERVICE_FEE) }
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #a7f3d0;">
+                                    <td style="padding: 0.5rem 0;">
+                                        { format!("ค่ายาและเวชภัณฑ์ ({} รายการ)", prescriptions.len()) }
+                                    </td>
+                                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 500;">
+                                        { format!("{:.2} บาท", calculated_drug_cost) }
+                                    </td>
+                                </tr>
+                                <tr style="background: #059669; color: white;">
+                                    <td style="padding: 0.75rem; font-size: 1.25rem; font-weight: bold;">
+                                        { "รวมทั้งสิ้น" }
+                                    </td>
+                                    <td style="padding: 0.75rem; text-align: right; font-size: 1.5rem; font-weight: bold;">
+                                        { format!("{:.2} บาท", calculated_total) }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         
-                        <div class="form-group">
-                            <label class="form-label">{ "💰 ค่ารักษารวม (บาท) *" }</label>
-                            <input type="number" required=true min="0" step="1" value={(*price).clone()} placeholder="0"
-                                inputmode="numeric"
-                                style="font-size: 2rem; font-weight: 700; text-align: center;"
-                                oninput={let p = price.clone(); Callback::from(move |e: InputEvent| {
-                                    let input: HtmlInputElement = e.target_unchecked_into();
-                                    // Only allow positive numbers
-                                    let val = input.value();
-                                    let filtered: String = val.chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
-                                    p.set(filtered);
-                                })} />
+                        // Manual override option
+                        <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 4px; padding: 1rem; margin-top: 1rem;">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="checkbox" id="manual-override" 
+                                    checked={*manual_price_override}
+                                    onchange={{
+                                        let manual_price_override = manual_price_override.clone();
+                                        let final_price = final_price.clone();
+                                        let calc_total = calculated_total;
+                                        Callback::from(move |e: Event| {
+                                            let checked = e.target_unchecked_into::<HtmlInputElement>().checked();
+                                            manual_price_override.set(checked);
+                                            if !checked {
+                                                final_price.set(calc_total);
+                                            }
+                                        })
+                                    }} />
+                                <label for="manual-override" style="font-weight: 500; color: #92400e;">
+                                    { "✏️ ปรับราคาเอง (กรณีพิเศษ เช่น ลดราคา, เหมาจ่าย)" }
+                                </label>
+                            </div>
+                            
+                            { if *manual_price_override {
+                                html! {
+                                    <div class="form-group" style="margin-top: 0.5rem;">
+                                        <input type="number" min="0" step="1" 
+                                            value={format!("{:.0}", *final_price)}
+                                            style="font-size: 1.5rem; font-weight: 700; text-align: center; border: 2px solid #f59e0b;"
+                                            oninput={{
+                                                let final_price = final_price.clone();
+                                                Callback::from(move |e: InputEvent| {
+                                                    let val: f64 = e.target_unchecked_into::<HtmlInputElement>()
+                                                        .value()
+                                                        .parse()
+                                                        .unwrap_or(0.0);
+                                                    final_price.set(val);
+                                                })
+                                            }} />
+                                    </div>
+                                }
+                            } else {
+                                html! {}
+                            }}
                         </div>
+                    </div>
+                </div>
+                
+                // Notes
+                <div class="card mb-6">
+                    <div class="form-group">
+                        <label class="form-label">{ "📝 หมายเหตุแพทย์ " } <span class="form-label-optional">{ "(ถ้ามี)" }</span></label>
+                        <textarea value={(*doctor_note).clone()} placeholder="หมายเหตุเพิ่มเติม..."
+                            oninput={let n = doctor_note.clone(); Callback::from(move |e: InputEvent| n.set(e.target_unchecked_into::<HtmlInputElement>().value()))} />
                     </div>
                 </div>
                 
@@ -390,7 +538,7 @@ pub fn treatment(props: &Props) -> Html {
                         { "← ยกเลิก" }
                     </Link<Route>>
                     <button type="submit" class="btn btn-success btn-lg" style="flex: 1; max-width: 400px;">
-                        { "💾 บันทึกการรักษา" }
+                        { format!("💾 บันทึกการรักษา ({:.0} บาท)", *final_price) }
                     </button>
                 </div>
             </form>

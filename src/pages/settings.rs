@@ -325,7 +325,15 @@ pub fn settings() -> Html {
                    },
                    Err(err) => {
                        if let Some(ref t) = toast {
-                           t.dispatch(ToastAction::Add(format!("❌ เกิดข้อผิดพลาด: {}", err), ToastType::Error));
+                           // Parse error and show user-friendly message
+                           let error_msg = if err.contains("Could not fetch") || err.contains("remote") {
+                               "⚠️ ยังไม่มีเวอร์ชันใหม่ หรือเซิร์ฟเวอร์ไม่พร้อมใช้งาน".to_string()
+                           } else if err.contains("Tauri context") || err.contains("TAURI") {
+                               "⚠️ ฟังก์ชันนี้ใช้ได้เฉพาะในแอป Desktop เท่านั้น".to_string()
+                           } else {
+                               format!("❌ เกิดข้อผิดพลาด: {}", err)
+                           };
+                           t.dispatch(ToastAction::Add(error_msg, ToastType::Error));
                        }
                    }
                 }
@@ -603,7 +611,7 @@ pub fn settings() -> Html {
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.7" }</strong></p>
+                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.8" }</strong></p>
                             <p class="text-muted">{ "หากมีเวอร์ชันใหม่ ระบบจะทำการดาวน์โหลดและติดตั้งให้ โดยท่านต้องเปิดแอปใหม่เอง" }</p>
                         </div>
                         <button type="button" class="btn btn-secondary" onclick={on_check_update}>
