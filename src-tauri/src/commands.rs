@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use tauri_plugin_updater::UpdaterExt;
 
 // Data file path helper
 fn get_data_dir() -> PathBuf {
@@ -145,4 +146,32 @@ pub fn open_data_folder() -> Result<(), String> {
     }
     
     Ok(())
+}
+
+/// Check for updates and install if available
+#[tauri::command]
+pub async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
+    log::info!("Checking for updates...");
+    
+    match app.updater().check().await {
+        Ok(Some(update)) => {
+            let version = update.version.to_string();
+            log::info!("Update found: {}", version);
+            
+            // Download and install
+            if let Err(e) = update.download_and_install(|_, _| {}, || {}).await {
+                return Err(format!("Failed to install update: {}", e));
+            }
+            
+            Ok(format!("✅ อัปเดตเป็นเวอร์ชัน {} เรียบร้อยแล้ว! กรุณาปิดแล้วเปิดแอปใหม่", version))
+        },
+        Ok(None) => {
+            log::info!("No updates found");
+            Ok("✅ คุณใช้เวอร์ชันล่าสุดแล้ว".to_string())
+        },
+        Err(e) => {
+            log::error!("Failed to check for updates: {}", e);
+            Err(format!("เกิดข้อผิดพลาดในการตรวจสอบอัปเดต: {}", e))
+        }
+    }
 }

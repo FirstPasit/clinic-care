@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "clinic_app"
-version = "1.0.1"
+version = "1.0.4"
 dependencies = [
  "chrono",
  "gloo 0.11.0",
@@ -92,6 +92,7 @@ dependencies = [
  "serde_json",
  "uuid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
  "yew",
  "yew-router",

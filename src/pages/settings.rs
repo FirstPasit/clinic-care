@@ -106,6 +106,62 @@ fn restore_from_json(json: &str) -> Result<(usize, usize, usize), String> {
     Ok((patient_count, record_count, drug_count))
 }
 
+async fn invoke_check_update() -> Result<String, String> {
+    use wasm_bindgen::JsValue;
+    use wasm_bindgen::JsCast;
+    
+    // ... code truncated for brevity, assume content is same as before but without duplicate Ok line ...
+    // Wait, I can't express "same as before" here. I must provide the full content or range.
+    // Let's fix the duplicate line first.
+    let window = web_sys::window().unwrap();
+    // ...
+    // Actually the duplicate was at line 106-107, which is "Ok((patient_count, record_count, drug_count))"
+    
+    // And for ToastType::Info (line 301 and 308 in original file approx), change to Success or Error.
+    // "กำลังตรวจสอบ..." -> Success (with message "Checking...") or just don't show toast?
+    // Let's use Success but with different icon if possible? No, toast component hardcodes icon.
+    // Just use Success for now.
+
+    // I will redo the function invoke_check_update import fully to be safe.
+    
+    let window = web_sys::window().unwrap();
+    let tauri = js_sys::Reflect::get(&window, &JsValue::from_str("__TAURI__"))
+        .map_err(|_| "Tauri API not found".to_string())?;
+        
+    if tauri.is_undefined() {
+        return Err("App is not running in Tauri context".to_string());
+    }
+    
+    // Try to find invoke function (supports both v1 and v2 structures)
+    let core = js_sys::Reflect::get(&tauri, &JsValue::from_str("core")).unwrap_or(JsValue::UNDEFINED);
+    let invoke_fn = if !core.is_undefined() {
+        js_sys::Reflect::get(&core, &JsValue::from_str("invoke")).unwrap()
+    } else {
+         let tauri_mod = js_sys::Reflect::get(&tauri, &JsValue::from_str("tauri")).unwrap_or(JsValue::UNDEFINED);
+         if !tauri_mod.is_undefined() {
+             js_sys::Reflect::get(&tauri_mod, &JsValue::from_str("invoke")).unwrap()
+         } else {
+             return Err("Invoke function not found".to_string());
+         }
+    };
+    
+    let invoke_fn_func = invoke_fn.dyn_into::<js_sys::Function>()
+        .map_err(|_| "Invoke is not a function".to_string())?;
+    
+    // Call invoke("check_for_updates")
+    let cmd = JsValue::from_str("check_for_updates");
+    let promise = invoke_fn_func.call1(&JsValue::NULL, &cmd)
+        .map_err(|e| format!("{:?}", e))?;
+        
+    // wasm_bindgen_futures::JsFuture requires imports in Cargo.toml. 
+    // I Will handle Cargo.toml in next step.
+    let result = wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise))
+        .await
+        .map_err(|e| format!("{:?}", e))?;
+        
+    Ok(result.as_string().unwrap_or_default())
+}
+
 #[function_component(Settings)]
 pub fn settings() -> Html {
     let toast = use_context::<ToastContext>();
@@ -247,6 +303,33 @@ pub fn settings() -> Html {
             
             // Clear the input so same file can be selected again
             input.set_value("");
+        })
+    };
+
+    let on_check_update = {
+        let toast = toast.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            let toast = toast.clone();
+            
+            if let Some(ref t) = toast {
+                t.dispatch(ToastAction::Add("⏳ กำลังตรวจสอบการอัปเดต...".to_string(), ToastType::Success));
+            }
+
+            wasm_bindgen_futures::spawn_local(async move {
+                match invoke_check_update().await {
+                   Ok(msg) => {
+                       if let Some(ref t) = toast {
+                           t.dispatch(ToastAction::Add(msg, ToastType::Success));
+                       }
+                   },
+                   Err(err) => {
+                       if let Some(ref t) = toast {
+                           t.dispatch(ToastAction::Add(format!("❌ เกิดข้อผิดพลาด: {}", err), ToastType::Error));
+                       }
+                   }
+                }
+            });
         })
     };
 
@@ -509,6 +592,23 @@ pub fn settings() -> Html {
                         <p class="text-muted" style="flex: 1;">
                             { "เลขที่ใบเสร็จจะเพิ่มขึ้นอัตโนมัติทุกครั้งที่ออกใบเสร็จ" }
                         </p>
+                    </div>
+                </div>
+                
+                // System Update Section
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h3 class="card-title">{ "🔄 ระบบและการอัปเดต" }</h3>
+                        <p class="card-subtitle">{ "ตรวจสอบเวอร์ชันใหม่ของโปรแกรม" }</p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.4" }</strong></p>
+                            <p class="text-muted">{ "หากมีเวอร์ชันใหม่ ระบบจะทำการดาวน์โหลดและติดตั้งให้ โดยท่านต้องเปิดแอปใหม่เอง" }</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick={on_check_update}>
+                            { "🔄 ตรวจสอบอัปเดต" }
+                        </button>
                     </div>
                 </div>
                 

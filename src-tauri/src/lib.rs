@@ -18,7 +18,8 @@ pub fn run() {
             create_backup,
             list_backups,
             restore_backup,
-            open_data_folder
+            open_data_folder,
+            check_for_updates
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
