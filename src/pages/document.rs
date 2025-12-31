@@ -289,7 +289,7 @@ pub fn document(props: &Props) -> Html {
                     </div>
                     
                     // Clinic Name & Address
-                    <div style="margin-bottom: 2rem; font-size: 1.1rem;">
+                    <div style="margin-bottom: 2rem; font-size: 1rem;">
                         <div style="margin-bottom: 0.3rem;">
                             { "ชื่อสถานพยาบาล " }
                             <span style="margin-left: 0.5rem;">{ &settings.clinic_name }</span>
@@ -301,7 +301,7 @@ pub fn document(props: &Props) -> Html {
                     </div>
                     
                     // Staff Info Line
-                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem;">
+                    <div style="margin-bottom: 1.5rem; font-size: 1rem;">
                         <div style="margin-bottom: 0.5rem;">
                             { "ข้าพเจ้า " }
                             <span style="border-bottom: 1px dotted #000; padding: 0 10px;">{ &staff_display }</span>
@@ -311,9 +311,16 @@ pub fn document(props: &Props) -> Html {
                     </div>
                     
                     // Main Content
-                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 2;">
+                    <div style="margin-bottom: 1.5rem; font-size: 1rem; line-height: 2;">
                         <div style="margin-bottom: 0.5rem;">
-                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์" }
+                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์ ให้แก่ " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; font-weight: bold;">
+                                { format!("{}{} {}", p.title, p.first_name, p.last_name) }
+                            </span>
+                            { " HN: " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; font-weight: bold;">
+                                { &p.hn }
+                            </span>
                         </div>
                         
                         <div style="margin-bottom: 0.5rem;">
@@ -337,7 +344,7 @@ pub fn document(props: &Props) -> Html {
                     </div>
                     
                     // Rest Period Section
-                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 2;">
+                    <div style="margin-bottom: 1.5rem; font-size: 1rem; line-height: 2;">
                         <div style="margin-bottom: 0.5rem;">
                             { "เห็นสมควรให้พักตั้งแต่" }
                             <span style="border-bottom: 1px dotted #000; padding: 0 10px; min-width: 100px; display: inline-block;"></span>
