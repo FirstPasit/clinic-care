@@ -3,6 +3,7 @@ use crate::models::TreatmentRecord;
 use crate::store::Store;
 use chrono::prelude::*;
 use gloo::timers::callback::Timeout;
+use yew_router::prelude::use_navigator;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -17,7 +18,8 @@ pub fn document(props: &Props) -> Html {
     });
     
     let settings = Store::get_settings();
-    
+    let navigator = use_navigator().unwrap();
+
     // Auto print on load
     use_effect_with((), move |_| {
          let timeout = Timeout::new(500, move || {
@@ -45,12 +47,11 @@ pub fn document(props: &Props) -> Html {
         &r.id[0..4].to_uppercase()
     );
     
-    // Calculate itemized costs (estimate based on total price)
-    let drug_count = r.prescriptions.len();
-    let service_fee = 100.0; // ค่าบริการ
-    let drug_cost = if drug_count > 0 { (r.price - service_fee).max(0.0) * 0.7 } else { 0.0 };
-    let treatment_fee = r.price - service_fee - drug_cost; // ค่าทำแผล/อื่นๆ
-
+    // Calculate itemized costs
+    let _drug_count = r.prescriptions.len();
+    let service_fee = 50.0; // Fixed Service Fee
+    let drug_cost = (r.price - service_fee).max(0.0);
+    
     let content = match props.doc_type.as_str() {
         "receipt" => html! {
             <div class="print-document">
@@ -88,7 +89,6 @@ pub fn document(props: &Props) -> Html {
                         <p style="margin: 0;"><strong>{ "ผู้รับบริการ:" }</strong></p>
                         <p style="margin: 0.25rem 0 0; font-size: 1.2rem;">{ format!("{}{} {}", p.title, p.first_name, p.last_name) }</p>
                         <p style="margin: 0;">{ format!("HN: {}", p.hn) }</p>
-                        <p style="margin: 0;">{ format!("เลขบัตรประชาชน: {}", p.citizen_id) }</p>
                     </div>
                 </div>
                 
@@ -102,18 +102,17 @@ pub fn document(props: &Props) -> Html {
                         </tr>
                     </thead>
                     <tbody>
-                        // 1. ค่าบริการ
+                        // 1. ค่าบริการทางการพยาบาล (Fixed 50)
                         <tr>
                             <td style="text-align: center;">{ "1" }</td>
                             <td>
-                                <div style="font-weight: bold;">{ "ค่าบริการตรวจรักษา" }</div>
-                                <div style="font-size: 0.9rem; color: #666;">{ &r.diagnosis }</div>
+                                <div style="font-weight: bold;">{ "ค่าบริการทางการพยาบาล" }</div>
                             </td>
-                            <td style="text-align: right; font-size: 1.1rem;">{ format!("{:.2}", service_fee) }</td>
+                            <td style="text-align: right; font-size: 1.1rem;">{ "50.00" }</td>
                         </tr>
                         
-                        // 2. ค่ายา (if any)
-                        { if drug_count > 0 {
+                        // 2. ค่ายา (Remaining)
+                        { if drug_cost > 0.0 {
                             html! {
                                 <tr>
                                     <td style="text-align: center;">{ "2" }</td>
@@ -126,19 +125,6 @@ pub fn document(props: &Props) -> Html {
                                         </ul>
                                     </td>
                                     <td style="text-align: right; font-size: 1.1rem;">{ format!("{:.2}", drug_cost) }</td>
-                                </tr>
-                            }
-                        } else { html! {} }}
-                        
-                        // 3. ค่าทำแผล/อื่นๆ (if any)
-                        { if treatment_fee > 0.0 {
-                            html! {
-                                <tr>
-                                    <td style="text-align: center;">{ if drug_count > 0 { "3" } else { "2" } }</td>
-                                    <td>
-                                        <div style="font-weight: bold;">{ "ค่าหัตถการ/ค่าทำแผล" }</div>
-                                    </td>
-                                    <td style="text-align: right; font-size: 1.1rem;">{ format!("{:.2}", treatment_fee) }</td>
                                 </tr>
                             }
                         } else { html! {} }}
@@ -169,12 +155,6 @@ pub fn document(props: &Props) -> Html {
                         <p style="margin: 0;">{ "ลงชื่อผู้รับเงิน" }</p>
                         <p style="margin: 0; font-size: 0.9rem; color: #666;">{ "(.......................................)​" }</p>
                     </div>
-                </div>
-                
-                // Footer
-                <div style="margin-top: 3rem; text-align: center; font-size: 0.9rem; color: #666; border-top: 1px solid #ddd; padding-top: 1rem;">
-                    <p style="margin: 0;">{ "ขอบคุณที่ใช้บริการ" }</p>
-                    <p style="margin: 0.25rem 0 0;">{ "กรุณาเก็บใบเสร็จนี้ไว้เป็นหลักฐาน" }</p>
                 </div>
             </div>
         },
@@ -253,22 +233,18 @@ pub fn document(props: &Props) -> Html {
                         <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #666;">{ "ใบอนุญาตเลขที่ ______________" }</p>
                     </div>
                 </div>
-                
-                <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 0.85rem;">
-                    { "ใบสั่งยานี้มีอายุ 30 วัน นับจากวันที่สั่งยา" }
-                </div>
             </div>
         },
         "cert" => {
             // Medical Certificate - ใบรับรองการรักษาพยาบาล
             // Use staff info from settings
             let staff_display = if settings.staff_name.is_empty() {
-                "______________________________".to_string()
+                "นางสมหญิง วีระจินตนา".to_string()
             } else {
                 settings.staff_name.clone()
             };
             let license_display = if settings.license_number.is_empty() {
-                "______________".to_string()
+                "4511055362".to_string()
             } else {
                 settings.license_number.clone()
             };
@@ -280,84 +256,95 @@ pub fn document(props: &Props) -> Html {
             
             html! {
                 <div class="print-document" style="font-family: 'Sarabun', 'TH Sarabun New', sans-serif;">
-                    // Header
+                    // Header Title
                     <div style="text-align: center; margin-bottom: 1rem;">
-                        <h1 style="margin: 0; font-size: 1.5rem; font-weight: bold;">{ "ใบรับรองการรักษาพยาบาล" }</h1>
+                        <h1 style="margin: 0; font-size: 1.8rem; font-weight: bold;">{ "ใบรับรองการรักษาพยาบาล" }</h1>
                     </div>
                     
-                    // Clinic Info
-                    <div style="margin-bottom: 1.5rem; line-height: 1.8;">
-                        <p style="margin: 0;"><strong>{ "ชื่อสถานพยาบาล" }</strong> { "  " } { &settings.clinic_name }</p>
-                        <p style="margin: 0;"><strong>{ "ตั้งอยู่เลขที่" }</strong> { "  " } { &settings.clinic_address }</p>
+                    // Clinic Name & Address
+                    <div style="text-align: center; margin-bottom: 2rem; font-size: 1.1rem;">
+                        <div style="margin-bottom: 0.2rem;">{ format!("ชื่อสถานพยาบาล {}", settings.clinic_name) }</div>
+                        <div>{ format!("ตั้งอยู่เลขที่ {}", settings.clinic_address) }</div>
                     </div>
                     
-                    // License Info - Auto-filled from settings
-                    <div style="margin-bottom: 1.5rem; line-height: 2;">
-                        <p style="margin: 0;">
+                    // Content
+                    <div style="margin-bottom: 1.5rem; line-height: 2; font-size: 1.2rem;">
+                        <div>
                             { "ข้าพเจ้า " }
-                            <span style="border-bottom: 1px solid #000; padding: 0 10px; font-weight: bold;">{ &staff_display }</span>
-                            { " ใบอนุญาตประกอบวิชาชีพเลขที่ " }
-                            <span style="border-bottom: 1px solid #000; padding: 0 10px; font-weight: bold;">{ &license_display }</span>
+                            <span style="display: inline-block; min-width: 200px; text-align: center;">{ &staff_display }</span>
+                        </div>
+                        <div>
+                          <p style="margin: 0;">
+                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์ " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 5px; font-weight: bold;">
+                                { format!(" ให้แก่ {}{} {}", p.title, p.first_name, p.last_name) }
+                            </span>
+                            { " HN: " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 5px; font-weight: bold;">
+                                { &p.hn }
+                            </span>
                         </p>
-                        <p style="margin: 0;">{ "ได้ทำการพยาบาลและหรือการผดุงครรภ์" }</p>
-                    </div>
-                    
-                    // Patient Info
-                    <div style="margin-bottom: 1rem; line-height: 2;">
-                        <p style="margin: 0;">
-                            <strong>{ "เมื่อวันที่ " }</strong>
-                            <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 250px;">{ &date_only }</span>
-                        </p>
-                        <p style="margin: 0;">
-                            <strong>{ "ด้วยอาการที่มาพบ " }</strong>
-                            <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 400px;">{ &r.symptoms }</span>
-                        </p>
-                        <p style="margin: 0; border-bottom: 1px dotted #000; min-height: 24px;">{ &r.diagnosis }</p>
-                    </div>
-                    
-                    // Rest recommendation
-                    <div style="margin-bottom: 2rem; line-height: 2;">
-                        <p style="margin: 0;">
+                        </div>
+                        <div>
+                            { "เมื่อวันที่ " }
+                            <span style="display: inline-block; min-width: 200px; text-align: center; border-bottom: 1px dotted #000;">{ &date_only }</span>
+                        </div>
+                        <div style="display: flex; align-items: baseline;">
+                            <span style="white-space: nowrap;">{ "ด้วยอาการที่มาพบ " }</span>
+                            <span style="flex-grow: 1; border-bottom: 1px dotted #000; text-align: left; padding-left: 10px;">{ &r.symptoms }</span>
+                        </div>
+                        <div style="border-bottom: 1px dotted #000; min-height: 1.5rem;">{ &r.diagnosis }</div>
+                        
+                        <div style="margin-top: 1rem;">
+                            { "ใบอนุญาตประกอบวิชาชีพเลขที่ " }
+                            <span>{ &license_display }</span>
+                        </div>
+                        
+                        // Resting period (Manual Fill)
+                        <div style="margin-top: 1rem;">
                             { "เห็นสมควรให้พักตั้งแต่" }
-                            <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 150px;">{ "  " }</span>
+                            <span style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000; margin: 0 5px;"></span>
                             { "ถึง" }
-                            <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 150px;">{ "  " }</span>
+                            <span style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000; margin: 0 5px;"></span>
+                        </div>
+                        <div>
                             { "เป็นเวลา" }
-                            <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 50px;">{ "  " }</span>
+                            <span style="display: inline-block; min-width: 50px; border-bottom: 1px dotted #000; margin: 0 5px; text-align: center;"></span>
                             { "วัน" }
-                        </p>
-                        <p style="margin: 0.5rem 0 0;">
+                        </div>
+                        
+                        // Certification
+                        <div style="margin-top: 1rem;">
                             { "ข้าพเจ้าขอรับรองว่า " }
-                            <span style="border-bottom: 1px solid #000; padding: 0 10px; font-weight: bold;">
+                            <span style="display: inline-block; min-width: 200px; text-align: center; border-bottom: 1px dotted #000;">
                                 { format!("{}{} {}", p.title, p.first_name, p.last_name) }
                             </span>
-                            { " มารับการรักษากับข้าพเจ้าตามข้อความข้างต้นจริง" }
-                        </p>
-                    </div>
-                    
-                    // Signature - Auto-filled from settings
-                    <div style="display: flex; justify-content: flex-end; margin-top: 4rem;">
-                        <div style="text-align: center; width: 280px;">
-                            <p style="margin: 0;">
-                                { "(" }
-                                <span style="padding: 0 20px;">{ &staff_display }</span>
-                                { ")" }
-                            </p>
-                            <p style="margin: 0.5rem 0 0;">{ format!("ตำแหน่ง {}", position_display) }</p>
-                            <p style="margin: 0.25rem 0 0;">
-                                { "วันที่ " }
-                                <span style="border-bottom: 1px dotted #000; display: inline-block; min-width: 150px;">{ &date_only }</span>
-                            </p>
+                        </div>
+                        <div>
+                            { "มารับการรักษากับข้าพเจ้าตามข้อความข้างต้นจริง" }
                         </div>
                     </div>
                     
-                    // Notes at bottom
-                    <div style="margin-top: 4rem; border-top: 1px solid #000; padding-top: 1rem;">
-                        <p style="margin: 0; font-size: 0.9rem;"><strong>{ "หมายเหตุ" }</strong></p>
-                        <ol style="margin: 0.5rem 0 0; padding-left: 2rem; font-size: 0.9rem; line-height: 1.8;">
-                            <li>{ "ให้ประทับตราสถานพยาบาล (ถ้ามี)" }</li>
-                            <li>{ "กรณีสมควรให้พักต้องไม่เกิน 2 วัน ทั้งนี้รวมวันที่มารับการตรวจด้วย" }</li>
-                        </ol>
+                    // Signatures
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; margin-top: 3rem; margin-right: 2rem;">
+                        <div style="text-align: center; width: 300px;">
+                            <div style="margin-bottom: 0.5rem;">
+                                { format!("( {} )", staff_display) }
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                { format!("ตำแหน่ง {}", position_display) }
+                            </div>
+                            <div>
+                                { "วันที่ " }
+                                <span style="display: inline-block; min-width: 120px; border-bottom: 1px dotted #000;">{ &date_only }</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    // Footer Notes
+                    <div style="margin-top: 4rem; font-size: 1rem;">
+                        <div>{ "หมายเหตุ 1. ให้ประทับตราสถานพยาบาล (ถ้ามี )" }</div>
+                        <div>{ "2. กรณีสมควรให้พักต้องไม่เกิน 2 วัน ทั้งนี้รวมวันที่มารับการตรวจด้วย" }</div>
                     </div>
                 </div>
             }
@@ -365,7 +352,19 @@ pub fn document(props: &Props) -> Html {
         _ => html! { <div class="print-document"><p>{ "ไม่พบประเภทเอกสาร" }</p></div> }
     };
     
-    content
+    html! {
+        <>
+            <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <button class="btn btn-secondary" onclick={move |_| navigator.back()}>
+                    { "← ปิด/ย้อนกลับ" }
+                </button>
+                <button class="btn btn-primary" onclick={|_| { let _ = web_sys::window().unwrap().print(); }}>
+                    { "🖨️ พิมพ์อีกครั้ง" }
+                </button>
+            </div>
+            { content }
+        </>
+    }
 }
 
 fn format_thai_baht(amount: f64) -> String {
