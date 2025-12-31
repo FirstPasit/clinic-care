@@ -153,7 +153,7 @@ pub fn open_data_folder() -> Result<(), String> {
 pub async fn check_for_updates(app: tauri::AppHandle) -> Result<String, String> {
     log::info!("Checking for updates...");
     
-    match app.updater().check().await {
+    match app.updater().map_err(|e| e.to_string())?.check().await {
         Ok(Some(update)) => {
             let version = update.version.to_string();
             log::info!("Update found: {}", version);
