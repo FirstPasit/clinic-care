@@ -3,6 +3,17 @@
    ตัวอักษรใหญ่ ปุ่มใหญ่ สีสบายตา
    ============================================ */
 
+/* Google Fonts - TH Sarabun PSK */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+
+/* Local ThaiSarabunPSK font (if available) */
+@font-face {
+  font-family: 'ThaiSarabunPSK';
+  src: local('TH Sarabun PSK'), local('THSarabunPSK'), local('ThaiSarabunPSK');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* CSS Variables - Large & Readable */
 :root {
   /* Font Sizes - EXTRA LARGE for elderly */
@@ -1137,14 +1148,33 @@ input.input-success:focus {
    PRINT STYLES
    ============================================ */
 
+/* Base Print Document - Default A4 */
 .print-document {
   background: white;
-  padding: 15mm;
+  padding: 10mm;
   max-width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
   color: black;
   font-size: 14px;
+  font-family: 'ThaiSarabunPSK', 'TH Sarabun PSK', 'Sarabun', sans-serif;
+}
+
+/* A5 Size - for Receipt and Prescription */
+.print-document.print-a5 {
+  max-width: 148mm;
+  min-height: 210mm;
+  padding: 8mm;
+  font-size: 12px;
+}
+
+/* Medical Certificate - A4 with special styling */
+.print-document.print-cert {
+  max-width: 210mm;
+  min-height: 297mm;
+  padding: 15mm 20mm;
+  font-size: 16px;
+  line-height: 1.8;
 }
 
 .print-header {
@@ -1181,6 +1211,7 @@ input.input-success:focus {
     background: white !important;
     margin: 0;
     font-size: 12pt;
+    font-family: 'ThaiSarabunPSK', 'TH Sarabun PSK', 'Sarabun', sans-serif !important;
   }
 
   .sidebar,
@@ -1200,6 +1231,12 @@ input.input-success:focus {
   .print-document {
     box-shadow: none;
     padding: 0;
+  }
+
+  /* A5 Page Size */
+  .print-a5 {
+    width: 148mm !important;
+    min-height: 210mm !important;
   }
 
   /* Sticker print specific */

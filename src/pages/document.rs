@@ -53,170 +53,196 @@ pub fn document(props: &Props) -> Html {
     let drug_cost = (r.price - service_fee).max(0.0);
     
     let content = match props.doc_type.as_str() {
+        // ==================== RECEIPT (A5) ====================
         "receipt" => html! {
-            <div class="print-document">
+            <div class="print-document print-a5">
                 // Header
-                <div style="text-align: center; border-bottom: 3px solid black; padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h1 style="margin: 0; font-size: 1.75rem;">{ &settings.clinic_name }</h1>
-                    <p style="margin: 0.5rem 0 0; font-size: 1rem;">{ &settings.clinic_address }</p>
-                    <p style="margin: 0; font-size: 0.95rem;">
-                        { format!("โทร: {} • เลขประจำตัวผู้เสียภาษี: {}", settings.clinic_phone, settings.clinic_tax_id) }
+                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    <h1 style="margin: 0; font-size: 1.3rem;">{ &settings.clinic_name }</h1>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem;">{ &settings.clinic_address }</p>
+                    <p style="margin: 0; font-size: 0.8rem;">
+                        { format!("โทร: {} • Tax ID: {}", settings.clinic_phone, settings.clinic_tax_id) }
                     </p>
                 </div>
                 
-                // Title with Receipt Number
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <h2 style="margin: 0; font-size: 1.5rem; border: 3px solid black; display: inline-block; padding: 0.75rem 2rem;">
-                        { "ใบเสร็จรับเงิน / RECEIPT" }
+                // Title with multilingual
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0; font-size: 1.2rem; border: 2px solid black; display: inline-block; padding: 0.4rem 1.5rem;">
+                        { "ใบเสร็จรับเงิน" }
                     </h2>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: #444;">
+                        { "RECEIPT / လက်ခံပြေစာ" }
+                    </p>
                 </div>
                 
                 // Receipt Number & Date
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px; font-size: 0.9rem;">
                     <div>
-                        <p style="margin: 0; font-size: 1.1rem;"><strong>{ "เลขที่ใบเสร็จ:" }</strong></p>
-                        <p style="margin: 0; font-size: 1.5rem; font-weight: bold; font-family: monospace;">{ &receipt_no }</p>
+                        <p style="margin: 0;"><strong>{ "เลขที่/No.:" }</strong></p>
+                        <p style="margin: 0; font-size: 1rem; font-weight: bold; font-family: monospace;">{ &receipt_no }</p>
                     </div>
                     <div style="text-align: right;">
-                        <p style="margin: 0;"><strong>{ "วันที่:" }</strong></p>
-                        <p style="margin: 0; font-size: 1.1rem;">{ &date_str }</p>
+                        <p style="margin: 0;"><strong>{ "วันที่/Date:" }</strong></p>
+                        <p style="margin: 0; font-size: 0.9rem;">{ &date_str }</p>
                     </div>
                 </div>
                 
-                // Patient Info
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; border: 1px solid #ddd; padding: 1rem; border-radius: 4px;">
-                    <div>
-                        <p style="margin: 0;"><strong>{ "ผู้รับบริการ:" }</strong></p>
-                        <p style="margin: 0.25rem 0 0; font-size: 1.2rem;">{ format!("{}{} {}", p.title, p.first_name, p.last_name) }</p>
-                        <p style="margin: 0;">{ format!("HN: {}", p.hn) }</p>
-                    </div>
+                // Patient Info - Multilingual
+                <div style="margin-bottom: 1rem; border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
+                    <p style="margin: 0;">
+                        <strong>{ "ผู้รับบริการ/Patient/လူနာ:" }</strong>
+                    </p>
+                    <p style="margin: 0.15rem 0 0; font-size: 1rem;">{ format!("{}{} {}", p.title, p.first_name, p.last_name) }</p>
+                    <p style="margin: 0; font-size: 0.85rem;">{ format!("HN: {}", p.hn) }</p>
                 </div>
                 
-                // Items Table - Itemized
-                <table class="print-table">
+                // Items Table - Compact with Multilingual
+                <table class="print-table" style="font-size: 0.85rem;">
                     <thead>
                         <tr>
-                            <th style="width: 50px; text-align: center;">{ "ลำดับ" }</th>
-                            <th style="width: 60%;">{ "รายการ" }</th>
-                            <th style="text-align: right;">{ "จำนวนเงิน (บาท)" }</th>
+                            <th style="width: 35px; text-align: center; padding: 0.4rem;">{ "#" }</th>
+                            <th style="padding: 0.4rem;">{ "รายการ/Item/ပစ္စည်း" }</th>
+                            <th style="text-align: right; padding: 0.4rem; width: 70px;">{ "บาท/THB" }</th>
                         </tr>
                     </thead>
                     <tbody>
-                        // 1. ค่าบริการทางการพยาบาล (Fixed 50)
+                        // 1. Nursing Service Fee
                         <tr>
-                            <td style="text-align: center;">{ "1" }</td>
-                            <td>
-                                <div style="font-weight: bold;">{ "ค่าบริการทางการพยาบาล" }</div>
+                            <td style="text-align: center; padding: 0.4rem;">{ "1" }</td>
+                            <td style="padding: 0.4rem;">
+                                <div>{ "ค่าบริการทางการพยาบาล" }</div>
+                                <div style="font-size: 0.75rem; color: #666;">{ "Nursing Service Fee / သူနာပြုဝန်ဆောင်မှုကြေး" }</div>
                             </td>
-                            <td style="text-align: right; font-size: 1.1rem;">{ "50.00" }</td>
+                            <td style="text-align: right; padding: 0.4rem;">{ "50.00" }</td>
                         </tr>
                         
-                        // 2. ค่ายา (Remaining)
+                        // 2. Drug Cost
                         { if drug_cost > 0.0 {
                             html! {
                                 <tr>
-                                    <td style="text-align: center;">{ "2" }</td>
-                                    <td>
-                                        <div style="font-weight: bold;">{ "ค่ายาและเวชภัณฑ์" }</div>
-                                        <ul style="margin: 0.25rem 0 0; padding-left: 1.5rem; font-size: 0.85rem; color: #444;">
+                                    <td style="text-align: center; padding: 0.4rem;">{ "2" }</td>
+                                    <td style="padding: 0.4rem;">
+                                        <div>{ "ค่ายาและเวชภัณฑ์" }</div>
+                                        <div style="font-size: 0.75rem; color: #666;">{ "Medicines / ဆေးဝါးများ" }</div>
+                                        <ul style="margin: 0.15rem 0 0; padding-left: 1rem; font-size: 0.75rem; color: #555;">
                                             { for r.prescriptions.iter().map(|rx| html! {
                                                 <li>{ format!("{} ({})", rx.name, rx.amount) }</li>
                                             })}
                                         </ul>
                                     </td>
-                                    <td style="text-align: right; font-size: 1.1rem;">{ format!("{:.2}", drug_cost) }</td>
+                                    <td style="text-align: right; padding: 0.4rem;">{ format!("{:.2}", drug_cost) }</td>
                                 </tr>
                             }
                         } else { html! {} }}
                     </tbody>
                     <tfoot>
                         <tr style="background: #f0f0f0;">
-                            <td colspan="2" style="text-align: right; font-weight: bold; font-size: 1.2rem;">{ "รวมทั้งสิ้น" }</td>
-                            <td style="text-align: right; font-weight: bold; font-size: 1.5rem;">{ format!("{:.2}", r.price) }</td>
+                            <td colspan="2" style="text-align: right; font-weight: bold; padding: 0.5rem;">
+                                { "รวม/Total/စုစုပေါင်း" }
+                            </td>
+                            <td style="text-align: right; font-weight: bold; font-size: 1.1rem; padding: 0.5rem;">
+                                { format!("{:.2}", r.price) }
+                            </td>
                         </tr>
                     </tfoot>
                 </table>
                 
                 // Amount in Thai words
-                <div style="margin: 1rem 0; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+                <div style="margin: 0.5rem 0; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; font-size: 0.85rem;">
                     <strong>{ "จำนวนเงินตัวอักษร: " }</strong>
                     { format_thai_baht(r.price) }
                 </div>
                 
-                // Signatures
-                <div style="display: flex; justify-content: space-between; margin-top: 4rem;">
-                    <div style="text-align: center; width: 200px;">
-                        <div style="border-bottom: 1px solid black; height: 50px; margin-bottom: 8px;"></div>
+                // Signatures - Compact
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem; font-size: 0.85rem;">
+                    <div style="text-align: center; width: 45%;">
+                        <div style="border-bottom: 1px solid black; height: 30px; margin-bottom: 4px;"></div>
                         <p style="margin: 0;">{ "ลงชื่อผู้รับบริการ" }</p>
-                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{ "(.......................................)​" }</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: #666;">{ "Patient Signature" }</p>
                     </div>
-                    <div style="text-align: center; width: 200px;">
-                        <div style="border-bottom: 1px solid black; height: 50px; margin-bottom: 8px;"></div>
+                    <div style="text-align: center; width: 45%;">
+                        <div style="border-bottom: 1px solid black; height: 30px; margin-bottom: 4px;"></div>
                         <p style="margin: 0;">{ "ลงชื่อผู้รับเงิน" }</p>
-                        <p style="margin: 0; font-size: 0.9rem; color: #666;">{ "(.......................................)​" }</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: #666;">{ "Cashier Signature" }</p>
                     </div>
                 </div>
             </div>
         },
+        
+        // ==================== PRESCRIPTION (A5) ====================
         "prescription" => html! {
-            <div class="print-document">
+            <div class="print-document print-a5">
                 // Header
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid black; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid black; padding-bottom: 0.5rem; margin-bottom: 1rem;">
                     <div>
-                        <h1 style="margin: 0; font-size: 1.5rem; color: #2563eb;">{ &settings.clinic_name }</h1>
-                        <p style="margin: 0.25rem 0 0; font-size: 0.9rem;">{ &settings.clinic_address }</p>
-                        <p style="margin: 0; font-size: 0.9rem;">{ format!("โทร: {}", settings.clinic_phone) }</p>
+                        <h1 style="margin: 0; font-size: 1.2rem; color: #2563eb;">{ &settings.clinic_name }</h1>
+                        <p style="margin: 0.15rem 0 0; font-size: 0.8rem;">{ &settings.clinic_address }</p>
+                        <p style="margin: 0; font-size: 0.8rem;">{ format!("โทร: {}", settings.clinic_phone) }</p>
                     </div>
-                    <div style="font-size: 2.5rem; font-weight: bold;">{ "ใบสั่งยา" }</div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: bold;">{ "ใบสั่งยา" }</div>
+                        <div style="font-size: 0.85rem; color: #666;">{ "PRESCRIPTION / ဆေးညွှန်း" }</div>
+                    </div>
                 </div>
                 
-                // Patient Info
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #ddd; border-radius: 4px;">
+                // Patient Info - Multilingual
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem;">
                     <div>
-                        <p style="margin: 0;"><strong>{ "ผู้ป่วย:" }</strong> { format!("{}{} {}", p.title, p.first_name, p.last_name) }</p>
-                        <p style="margin: 0.25rem 0 0;"><strong>{ "HN:" }</strong> { &p.hn }</p>
+                        <p style="margin: 0;"><strong>{ "ผู้ป่วย/Patient/လူနာ:" }</strong> { format!("{}{} {}", p.title, p.first_name, p.last_name) }</p>
+                        <p style="margin: 0.15rem 0 0;"><strong>{ "HN:" }</strong> { &p.hn }</p>
                         { if !p.drug_allergy.is_empty() && p.drug_allergy != "ไม่มี" {
-                            html! { <p style="margin: 0.25rem 0 0; color: #dc2626;"><strong>{ "⚠️ แพ้ยา:" }</strong> { &p.drug_allergy }</p> }
+                            html! { <p style="margin: 0.15rem 0 0; color: #dc2626;"><strong>{ "⚠️ แพ้ยา/Allergy:" }</strong> { &p.drug_allergy }</p> }
                         } else { html! {} }}
                     </div>
                     <div style="text-align: right;">
-                        <p style="margin: 0;"><strong>{ "วันที่:" }</strong> { &date_str }</p>
+                        <p style="margin: 0;"><strong>{ "วันที่/Date:" }</strong></p>
+                        <p style="margin: 0;">{ &date_str }</p>
                     </div>
                 </div>
                 
-                // Prescription List
-                <div style="margin-bottom: 2rem;">
-                    <h3 style="margin: 0 0 1rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem;">{ "💊 รายการยา" }</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
+                // Prescription List - Compact Multilingual
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0 0 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; font-size: 1rem;">
+                        { "💊 รายการยา / Medicines / ဆေးဝါးများ" }
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
                         <thead>
                             <tr style="background: #f5f5f5;">
-                                <th style="padding: 0.75rem; text-align: left; border: 1px solid #ddd; width: 40px;">{ "ลำดับ" }</th>
-                                <th style="padding: 0.75rem; text-align: left; border: 1px solid #ddd;">{ "ชื่อยา" }</th>
-                                <th style="padding: 0.75rem; text-align: left; border: 1px solid #ddd;">{ "วิธีใช้" }</th>
-                                <th style="padding: 0.75rem; text-align: center; border: 1px solid #ddd; width: 80px;">{ "จำนวน" }</th>
+                                <th style="padding: 0.4rem; text-align: left; border: 1px solid #ddd; width: 30px;">{ "#" }</th>
+                                <th style="padding: 0.4rem; text-align: left; border: 1px solid #ddd;">{ "ชื่อยา/Medicine" }</th>
+                                <th style="padding: 0.4rem; text-align: left; border: 1px solid #ddd;">{ "วิธีใช้/Dosage/သောက်ပုံ" }</th>
+                                <th style="padding: 0.4rem; text-align: center; border: 1px solid #ddd; width: 50px;">{ "จำนวน" }</th>
                             </tr>
                         </thead>
                         <tbody>
                             { for r.prescriptions.iter().enumerate().map(|(i, rx)| {
-                                let dosage = if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
-                                    format!("เช้า {} กลางวัน {} เย็น {} ก่อนนอน {} ({})", 
-                                        rx.morning, rx.noon, rx.evening, rx.before_bed,
-                                        if rx.timing.is_empty() { "หลังอาหาร" } else { &rx.timing })
+                                let dosage_th = if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
+                                    format!("เช้า {} กลางวัน {} เย็น {} ก่อนนอน {}", 
+                                        rx.morning, rx.noon, rx.evening, rx.before_bed)
                                 } else {
-                                    if rx.timing.is_empty() { rx.usage.clone() } 
-                                    else { format!("{} ({})", rx.usage, rx.timing) }
+                                    rx.usage.clone()
                                 };
+                                let dosage_en = if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
+                                    format!("M:{} N:{} E:{} B:{}", rx.morning, rx.noon, rx.evening, rx.before_bed)
+                                } else {
+                                    "As directed".to_string()
+                                };
+                                let timing = if rx.timing.is_empty() { "หลังอาหาร / After meal" } else { &rx.timing };
                                 html! {
                                     <tr>
-                                        <td style="padding: 0.75rem; border: 1px solid #ddd; text-align: center;">{ i + 1 }</td>
-                                        <td style="padding: 0.75rem; border: 1px solid #ddd;">
+                                        <td style="padding: 0.4rem; border: 1px solid #ddd; text-align: center;">{ i + 1 }</td>
+                                        <td style="padding: 0.4rem; border: 1px solid #ddd;">
                                             <div style="font-weight: bold;">{ &rx.name }</div>
                                             { if !rx.warning.is_empty() {
-                                                html! { <div style="color: #dc2626; font-size: 0.9rem;">{ format!("⚠️ {}", rx.warning) }</div> }
+                                                html! { <div style="color: #dc2626; font-size: 0.75rem;">{ format!("⚠️ {}", rx.warning) }</div> }
                                             } else { html! {} }}
                                         </td>
-                                        <td style="padding: 0.75rem; border: 1px solid #ddd;">{ dosage }</td>
-                                        <td style="padding: 0.75rem; border: 1px solid #ddd; text-align: center; font-weight: bold;">{ &rx.amount }</td>
+                                        <td style="padding: 0.4rem; border: 1px solid #ddd;">
+                                            <div>{ &dosage_th }</div>
+                                            <div style="font-size: 0.7rem; color: #666;">{ dosage_en }</div>
+                                            <div style="font-size: 0.7rem; color: #888;">{ timing }</div>
+                                        </td>
+                                        <td style="padding: 0.4rem; border: 1px solid #ddd; text-align: center; font-weight: bold;">{ &rx.amount }</td>
                                     </tr>
                                 }
                             })}
@@ -224,20 +250,21 @@ pub fn document(props: &Props) -> Html {
                     </table>
                 </div>
                 
-                // Signature
-                <div style="display: flex; justify-content: flex-end; margin-top: 3rem;">
-                    <div style="text-align: center; width: 250px;">
-                        <div style="border-bottom: 1px solid black; height: 60px; margin-bottom: 8px;"></div>
+                // Signature - Compact
+                <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                    <div style="text-align: center; width: 180px; font-size: 0.85rem;">
+                        <div style="border-bottom: 1px solid black; height: 35px; margin-bottom: 4px;"></div>
                         <p style="margin: 0;"><strong>{ "ลงชื่อแพทย์ผู้สั่งยา" }</strong></p>
-                        <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #666;">{ "(.......................................)​" }</p>
-                        <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #666;">{ "ใบอนุญาตเลขที่ ______________" }</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: #666;">{ "Prescriber / ဆရာဝန် လက်မှတ်" }</p>
+                        <p style="margin: 0.15rem 0 0; font-size: 0.75rem; color: #666;">{ "License No. ______________" }</p>
                     </div>
                 </div>
             </div>
         },
+        
+        // ==================== MEDICAL CERTIFICATE (A4) ====================
         "cert" => {
             // Medical Certificate - ใบรับรองการรักษาพยาบาล
-            // Use staff info from settings
             let staff_display = if settings.staff_name.is_empty() {
                 "นางสมหญิง วีระจินตนา".to_string()
             } else {
@@ -255,96 +282,104 @@ pub fn document(props: &Props) -> Html {
             };
             
             html! {
-                <div class="print-document" style="font-family: 'Sarabun', 'TH Sarabun New', sans-serif;">
+                <div class="print-document print-cert">
                     // Header Title
-                    <div style="text-align: center; margin-bottom: 1rem;">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
                         <h1 style="margin: 0; font-size: 1.8rem; font-weight: bold;">{ "ใบรับรองการรักษาพยาบาล" }</h1>
                     </div>
                     
                     // Clinic Name & Address
-                    <div style="text-align: center; margin-bottom: 2rem; font-size: 1.1rem;">
-                        <div style="margin-bottom: 0.2rem;">{ format!("ชื่อสถานพยาบาล {}", settings.clinic_name) }</div>
-                        <div>{ format!("ตั้งอยู่เลขที่ {}", settings.clinic_address) }</div>
+                    <div style="margin-bottom: 2rem; font-size: 1.1rem;">
+                        <div style="margin-bottom: 0.3rem;">
+                            { "ชื่อสถานพยาบาล " }
+                            <span style="margin-left: 0.5rem;">{ &settings.clinic_name }</span>
+                        </div>
+                        <div>
+                            { "ตั้งอยู่เลขที่ " }
+                            <span style="margin-left: 0.5rem;">{ &settings.clinic_address }</span>
+                        </div>
                     </div>
                     
-                    // Content
-                    <div style="margin-bottom: 1.5rem; line-height: 2; font-size: 1.2rem;">
-                        <div>
+                    // Staff Info Line
+                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem;">
+                        <div style="margin-bottom: 0.5rem;">
                             { "ข้าพเจ้า " }
-                            <span style="display: inline-block; min-width: 200px; text-align: center;">{ &staff_display }</span>
-                        </div>
-                        <div>
-                          <p style="margin: 0;">
-                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์ " }
-                            <span style="border-bottom: 1px dotted #000; padding: 0 5px; font-weight: bold;">
-                                { format!(" ให้แก่ {}{} {}", p.title, p.first_name, p.last_name) }
-                            </span>
-                            { " HN: " }
-                            <span style="border-bottom: 1px dotted #000; padding: 0 5px; font-weight: bold;">
-                                { &p.hn }
-                            </span>
-                        </p>
-                        </div>
-                        <div>
-                            { "เมื่อวันที่ " }
-                            <span style="display: inline-block; min-width: 200px; text-align: center; border-bottom: 1px dotted #000;">{ &date_only }</span>
-                        </div>
-                        <div style="display: flex; align-items: baseline;">
-                            <span style="white-space: nowrap;">{ "ด้วยอาการที่มาพบ " }</span>
-                            <span style="flex-grow: 1; border-bottom: 1px dotted #000; text-align: left; padding-left: 10px;">{ &r.symptoms }</span>
-                        </div>
-                        <div style="border-bottom: 1px dotted #000; min-height: 1.5rem;">{ &r.diagnosis }</div>
-                        
-                        <div style="margin-top: 1rem;">
-                            { "ใบอนุญาตประกอบวิชาชีพเลขที่ " }
-                            <span>{ &license_display }</span>
-                        </div>
-                        
-                        // Resting period (Manual Fill)
-                        <div style="margin-top: 1rem;">
-                            { "เห็นสมควรให้พักตั้งแต่" }
-                            <span style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000; margin: 0 5px;"></span>
-                            { "ถึง" }
-                            <span style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000; margin: 0 5px;"></span>
-                        </div>
-                        <div>
-                            { "เป็นเวลา" }
-                            <span style="display: inline-block; min-width: 50px; border-bottom: 1px dotted #000; margin: 0 5px; text-align: center;"></span>
-                            { "วัน" }
-                        </div>
-                        
-                        // Certification
-                        <div style="margin-top: 1rem;">
-                            { "ข้าพเจ้าขอรับรองว่า " }
-                            <span style="display: inline-block; min-width: 200px; text-align: center; border-bottom: 1px dotted #000;">
-                                { format!("{}{} {}", p.title, p.first_name, p.last_name) }
-                            </span>
-                        </div>
-                        <div>
-                            { "มารับการรักษากับข้าพเจ้าตามข้อความข้างต้นจริง" }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px;">{ &staff_display }</span>
+                            { " ใบอนุญาตประกอบวิชาชีพเลขที่ " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px;">{ &license_display }</span>
                         </div>
                     </div>
                     
-                    // Signatures
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; margin-top: 3rem; margin-right: 2rem;">
-                        <div style="text-align: center; width: 300px;">
-                            <div style="margin-bottom: 0.5rem;">
+                    // Main Content
+                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 2;">
+                        <div style="margin-bottom: 0.5rem;">
+                            { "ได้ทำการพยาบาลและหรือการผดุงครรภ์" }
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            { "เมื่อวันที่ " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 30px; min-width: 150px; display: inline-block; text-align: center;">
+                                { &date_only }
+                            </span>
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            { "ด้วยอาการที่มาพบ " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 5px; display: inline-block; min-width: 400px;">
+                                { &r.symptoms }
+                            </span>
+                        </div>
+                        
+                        // Diagnosis line (blank if none)
+                        <div style="border-bottom: 1px dotted #000; min-height: 1.5rem; margin-bottom: 0.75rem;">
+                            { &r.diagnosis }
+                        </div>
+                    </div>
+                    
+                    // Rest Period Section
+                    <div style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 2;">
+                        <div style="margin-bottom: 0.5rem;">
+                            { "เห็นสมควรให้พักตั้งแต่" }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; min-width: 100px; display: inline-block;"></span>
+                            { " ถึง " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; min-width: 100px; display: inline-block;"></span>
+                            { " เป็นเวลา " }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; min-width: 30px; display: inline-block;"></span>
+                            { " วัน" }
+                        </div>
+                        
+                        <div>
+                            { "ข้าพเจ้าขอรับรองว่า" }
+                            <span style="border-bottom: 1px dotted #000; padding: 0 10px; min-width: 200px; display: inline-block;"></span>
+                            { "มารับการรักษากับข้าพเจ้าตามข้อความ" }
+                        </div>
+                        <div>{ "ข้างต้นจริง" }</div>
+                    </div>
+                    
+                    // Signature Section - Right Aligned
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; margin-top: 4rem; margin-right: 3rem;">
+                        <div style="text-align: center; width: 280px;">
+                            <div style="height: 2rem;"></div>
+                            <div style="margin-bottom: 0.3rem;">
                                 { format!("( {} )", staff_display) }
                             </div>
-                            <div style="margin-bottom: 0.5rem;">
+                            <div style="margin-bottom: 0.3rem;">
                                 { format!("ตำแหน่ง {}", position_display) }
                             </div>
                             <div>
                                 { "วันที่ " }
-                                <span style="display: inline-block; min-width: 120px; border-bottom: 1px dotted #000;">{ &date_only }</span>
+                                <span style="border-bottom: 1px dotted #000; padding: 0 20px; min-width: 100px; display: inline-block;">
+                                    { &date_only }
+                                </span>
                             </div>
                         </div>
                     </div>
                     
                     // Footer Notes
-                    <div style="margin-top: 4rem; font-size: 1rem;">
-                        <div>{ "หมายเหตุ 1. ให้ประทับตราสถานพยาบาล (ถ้ามี )" }</div>
-                        <div>{ "2. กรณีสมควรให้พักต้องไม่เกิน 2 วัน ทั้งนี้รวมวันที่มารับการตรวจด้วย" }</div>
+                    <div style="margin-top: 5rem; font-size: 0.95rem;">
+                        <div style="text-decoration: underline; margin-bottom: 0.3rem;">{ "หมายเหตุ" }</div>
+                        <div style="padding-left: 1rem;">{ "1. ให้ประทับตราสถานพยาบาล (ถ้ามี)" }</div>
+                        <div style="padding-left: 1rem;">{ "2. กรณีสมควรให้พักต้องไม่เกิน 2 วัน ทั้งนี้รวมวันที่มารับการตรวจด้วย" }</div>
                     </div>
                 </div>
             }

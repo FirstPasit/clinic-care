@@ -603,7 +603,7 @@ pub fn settings() -> Html {
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.5" }</strong></p>
+                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.6" }</strong></p>
                             <p class="text-muted">{ "หากมีเวอร์ชันใหม่ ระบบจะทำการดาวน์โหลดและติดตั้งให้ โดยท่านต้องเปิดแอปใหม่เอง" }</p>
                         </div>
                         <button type="button" class="btn btn-secondary" onclick={on_check_update}>
