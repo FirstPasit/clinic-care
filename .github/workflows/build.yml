@@ -50,13 +50,16 @@ jobs:
         run: trunk build
 
       - name: Check Signing Key Exists
+        shell: bash
         run: |
-          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "✅ TAURI_SIGNING_PRIVATE_KEY is set (length: ${#TAURI_SIGNING_PRIVATE_KEY} chars)"
+          else
             echo "::error::TAURI_SIGNING_PRIVATE_KEY secret is not set!"
             exit 1
-          else
-            echo "✅ TAURI_SIGNING_PRIVATE_KEY is set"
           fi
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
