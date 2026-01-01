@@ -49,6 +49,15 @@ jobs:
       - name: Build Frontend with Trunk
         run: trunk build
 
+      - name: Check Signing Key Exists
+        run: |
+          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY secret is not set!"
+            exit 1
+          else
+            echo "✅ TAURI_SIGNING_PRIVATE_KEY is set"
+          fi
+
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -63,3 +72,4 @@ jobs:
           prerelease: false
           updater: true
           includeUpdaterJson: true
+          args: ${{ matrix.args }}
