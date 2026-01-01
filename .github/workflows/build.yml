@@ -73,6 +73,15 @@ jobs:
           releaseBody: 'ดาวน์โหลดและติดตั้งจากไฟล์ด้านล่าง'
           releaseDraft: false
           prerelease: false
-          updater: true
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+
+      - name: Debug - Check Signature Files
+        if: always()
+        shell: bash
+        run: |
+          echo "Looking for signature files..."
+          find ${{ github.workspace }}/src-tauri/target -name "*.sig" 2>/dev/null || echo "No .sig files found"
+          echo ""
+          echo "Looking for .tar.gz files..."
+          find ${{ github.workspace }}/src-tauri/target -name "*.tar.gz" 2>/dev/null || echo "No .tar.gz files found"
