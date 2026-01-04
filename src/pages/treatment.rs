@@ -56,6 +56,7 @@ pub fn treatment(props: &Props) -> Html {
     let pressure = use_state(|| String::new());
     let doctor_note = use_state(|| String::new());
     let manual_price_override = use_state(|| false); // Flag for manual override
+    let is_drug_only_purchase = use_state(|| false); // ซื้อยาอย่างเดียว ไม่คิดค่าบริการ
     
     // Dynamic lists
     let prescriptions = use_state(|| Vec::<PrescriptionItem>::new());
@@ -75,7 +76,9 @@ pub fn treatment(props: &Props) -> Html {
         }).sum::<f64>()
     };
     
-    let calculated_total = SERVICE_FEE + calculated_drug_cost;
+    // ถ้าซื้อยาอย่างเดียว ไม่คิดค่าบริการ 50 บาท
+    let service_fee_to_add = if *is_drug_only_purchase { 0.0 } else { SERVICE_FEE };
+    let calculated_total = service_fee_to_add + calculated_drug_cost;
     
     // Use calculated price unless manually overridden
     let final_price = use_state(|| 0.0_f64);
@@ -84,11 +87,12 @@ pub fn treatment(props: &Props) -> Html {
     {
         let final_price = final_price.clone();
         let manual_override = *manual_price_override;
+        let is_drug_only = *is_drug_only_purchase;
         let calc_total = calculated_total;
         
         use_effect_with(
-            (prescriptions.clone(), manual_override),
-            move |(_, override_flag)| {
+            (prescriptions.clone(), manual_override, is_drug_only),
+            move |(_, override_flag, _)| {
                 if !*override_flag {
                     final_price.set(calc_total);
                 }
@@ -236,7 +240,30 @@ pub fn treatment(props: &Props) -> Html {
                 // Prescriptions with Enhanced UI
                 <div class="card mb-6">
                     <div class="card-header">
-                        <h3 class="card-title">{ "💊 รายการยา" }</h3>
+                        <div>
+                            <h3 class="card-title">{ "💊 รายการยา" }</h3>
+                            // Drug-only purchase toggle
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                                <input type="checkbox" id="drug-only-purchase" 
+                                    checked={*is_drug_only_purchase}
+                                    onchange={{
+                                        let is_drug_only_purchase = is_drug_only_purchase.clone();
+                                        let manual_price_override = manual_price_override.clone();
+                                        Callback::from(move |e: Event| {
+                                            let checked = e.target_unchecked_into::<HtmlInputElement>().checked();
+                                            is_drug_only_purchase.set(checked);
+                                            manual_price_override.set(false); // Reset manual override
+                                        })
+                                    }} />
+                                <label for="drug-only-purchase" style={if *is_drug_only_purchase { 
+                                    "font-weight: bold; color: #059669; background: #dcfce7; padding: 0.25rem 0.5rem; border-radius: 4px;" 
+                                } else { 
+                                    "color: #666;" 
+                                }}>
+                                    { "💰 ซื้อยาอย่างเดียว (ไม่คิดค่าบริการ 50 บาท)" }
+                                </label>
+                            </div>
+                        </div>
                         <button type="button" onclick={add_drug} class="btn btn-primary">
                             { "➕ เพิ่มยา" }
                         </button>
@@ -263,7 +290,10 @@ pub fn treatment(props: &Props) -> Html {
                                     // Get current drug price for display
                                     let current_drug = drug_list_clone2.iter().find(|d| d.name == item.name);
                                     let unit_price = current_drug.map(|d| d.sell_price).unwrap_or(0.0);
+                                    let stock_available = current_drug.map(|d| d.stock).unwrap_or(0);
                                     let quantity = parse_quantity(&item.amount);
+                                    let quantity_u32 = quantity as u32;
+                                    let is_over_stock = current_drug.is_some() && quantity_u32 > stock_available;
                                     let line_total = unit_price * quantity;
                                     
                                     html! {
@@ -299,16 +329,51 @@ pub fn treatment(props: &Props) -> Html {
                                                 <label class="form-label">{ "ชื่อยา" }</label>
                                                 <input type="text" list={format!("drugs-{}", i)} value={item.name.clone()} 
                                                     placeholder="พิมพ์ชื่อยา หรือเลือกจากรายการ"
+                                                    onchange={{
+                                                        let prescriptions = prescriptions_for_update.clone();
+                                                        let manual_override = manual_override_clone.clone();
+                                                        let drug_list_for_autofill = drug_list_clone.clone();
+                                                        move |e: Event| {
+                                                            let drug_name = e.target_unchecked_into::<HtmlInputElement>().value();
+                                                            let mut current = (*prescriptions).clone();
+                                                            if let Some(rx) = current.get_mut(i) {
+                                                                rx.name = drug_name.clone();
+                                                                // Auto-fill usage and warning from drug inventory
+                                                                if let Some(drug) = drug_list_for_autofill.iter().find(|d| d.name == drug_name) {
+                                                                    // Only auto-fill if fields are empty
+                                                                    if rx.usage.is_empty() && !drug.default_usage.is_empty() {
+                                                                        rx.usage = drug.default_usage.clone();
+                                                                    }
+                                                                    if rx.warning.is_empty() && !drug.warning.is_empty() {
+                                                                        rx.warning = drug.warning.clone();
+                                                                    }
+                                                                }
+                                                            }
+                                                            prescriptions.set(current);
+                                                            manual_override.set(false);
+                                                        }
+                                                    }}
                                                     oninput={{
                                                         let prescriptions = prescriptions_for_update.clone();
                                                         let manual_override = manual_override_clone.clone();
+                                                        let drug_list_for_autofill = drug_list_clone.clone();
                                                         move |e: InputEvent| {
+                                                            let drug_name = e.target_unchecked_into::<HtmlInputElement>().value();
                                                             let mut current = (*prescriptions).clone();
                                                             if let Some(rx) = current.get_mut(i) {
-                                                                rx.name = e.target_unchecked_into::<HtmlInputElement>().value();
+                                                                rx.name = drug_name.clone();
+                                                                // Auto-fill usage and warning when exact match found
+                                                                if let Some(drug) = drug_list_for_autofill.iter().find(|d| d.name == drug_name) {
+                                                                    if rx.usage.is_empty() && !drug.default_usage.is_empty() {
+                                                                        rx.usage = drug.default_usage.clone();
+                                                                    }
+                                                                    if rx.warning.is_empty() && !drug.warning.is_empty() {
+                                                                        rx.warning = drug.warning.clone();
+                                                                    }
+                                                                }
                                                             }
                                                             prescriptions.set(current);
-                                                            manual_override.set(false); // Recalculate price
+                                                            manual_override.set(false);
                                                         }
                                                     }} />
                                                 <datalist id={format!("drugs-{}", i)}>
@@ -316,6 +381,19 @@ pub fn treatment(props: &Props) -> Html {
                                                         html! { <option value={d.name.clone()} /> }
                                                     })}
                                                 </datalist>
+                                                // Show hint if drug found in inventory
+                                                { if let Some(drug) = current_drug {
+                                                    html! {
+                                                        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+                                                            { if !drug.default_usage.is_empty() {
+                                                                html! { <span style="margin-right: 1rem;">{ format!("💊 คำแนะนำเริ่มต้น: {}", drug.default_usage) }</span> }
+                                                            } else { html! {} }}
+                                                            { if !drug.warning.is_empty() {
+                                                                html! { <span style="color: #dc2626;">{ format!("⚠️ คำเตือน: {}", drug.warning) }</span> }
+                                                            } else { html! {} }}
+                                                        </div>
+                                                    }
+                                                } else { html! {} }}
                                             </div>
                                             
                                             // Dosage boxes - BIG and EASY
@@ -400,8 +478,18 @@ pub fn treatment(props: &Props) -> Html {
                                                     </select>
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="form-label">{ "จำนวนทั้งหมด (ใส่ตัวเลขก่อน)" }</label>
+                                                    <label class="form-label">
+                                                        { "จำนวนทั้งหมด (ใส่ตัวเลขก่อน)" }
+                                                        { if current_drug.is_some() {
+                                                            html! { 
+                                                                <span style={if is_over_stock { "color: #dc2626; margin-left: 0.5rem;" } else { "color: #059669; margin-left: 0.5rem;" }}>
+                                                                    { format!("(คงเหลือ {} {})", stock_available, current_drug.map(|d| d.unit.as_str()).unwrap_or("หน่วย")) }
+                                                                </span>
+                                                            }
+                                                        } else { html! {} }}
+                                                    </label>
                                                     <input type="text" value={item.amount.clone()} placeholder="เช่น 10 เม็ด, 1 ขวด"
+                                                        style={if is_over_stock { "border-color: #dc2626; background: #fef2f2;" } else { "" }}
                                                         oninput={{
                                                             let prescriptions = prescriptions_for_update2.clone();
                                                             let manual_override = manual_override_clone.clone();
@@ -414,6 +502,13 @@ pub fn treatment(props: &Props) -> Html {
                                                                 manual_override.set(false); // Recalculate
                                                             }
                                                         }} />
+                                                    { if is_over_stock {
+                                                        html! {
+                                                            <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">
+                                                                { format!("⚠️ สั่งเกินสต็อก! (คงเหลือ {} ชิ้น)", stock_available) }
+                                                            </div>
+                                                        }
+                                                    } else { html! {} }}
                                                 </div>
                                             </div>
                                             
@@ -451,10 +546,19 @@ pub fn treatment(props: &Props) -> Html {
                         // Price Breakdown
                         <table style="width: 100%; margin-bottom: 1rem;">
                             <tbody>
-                                <tr style="border-bottom: 1px solid #a7f3d0;">
-                                    <td style="padding: 0.5rem 0;">{ "ค่าบริการทางการพยาบาล" }</td>
+                                <tr style={if *is_drug_only_purchase { 
+                                    "border-bottom: 1px solid #a7f3d0; opacity: 0.5; text-decoration: line-through;" 
+                                } else { 
+                                    "border-bottom: 1px solid #a7f3d0;" 
+                                }}>
+                                    <td style="padding: 0.5rem 0;">
+                                        { "ค่าบริการทางการพยาบาล" }
+                                        { if *is_drug_only_purchase {
+                                            html! { <span style="color: #dc2626; margin-left: 0.5rem;">{ "(ไม่คิด - ซื้อยาอย่างเดียว)" }</span> }
+                                        } else { html! {} }}
+                                    </td>
                                     <td style="padding: 0.5rem 0; text-align: right; font-weight: 500;">
-                                        { format!("{:.2} บาท", SERVICE_FEE) }
+                                        { format!("{:.2} บาท", service_fee_to_add) }
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid #a7f3d0;">

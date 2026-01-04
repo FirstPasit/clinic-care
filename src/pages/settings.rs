@@ -110,20 +110,6 @@ async fn invoke_check_update() -> Result<String, String> {
     use wasm_bindgen::JsValue;
     use wasm_bindgen::JsCast;
     
-    // ... code truncated for brevity, assume content is same as before but without duplicate Ok line ...
-    // Wait, I can't express "same as before" here. I must provide the full content or range.
-    // Let's fix the duplicate line first.
-    let window = web_sys::window().unwrap();
-    // ...
-    // Actually the duplicate was at line 106-107, which is "Ok((patient_count, record_count, drug_count))"
-    
-    // And for ToastType::Info (line 301 and 308 in original file approx), change to Success or Error.
-    // "กำลังตรวจสอบ..." -> Success (with message "Checking...") or just don't show toast?
-    // Let's use Success but with different icon if possible? No, toast component hardcodes icon.
-    // Just use Success for now.
-
-    // I will redo the function invoke_check_update import fully to be safe.
-    
     let window = web_sys::window().unwrap();
     let tauri = js_sys::Reflect::get(&window, &JsValue::from_str("__TAURI__"))
         .map_err(|_| "Tauri API not found".to_string())?;
@@ -611,7 +597,7 @@ pub fn settings() -> Html {
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.8" }</strong></p>
+                            <p>{ "เวอร์ชันปัจจุบัน: " }<strong>{ "1.0.9" }</strong></p>
                             <p class="text-muted">{ "หากมีเวอร์ชันใหม่ ระบบจะทำการดาวน์โหลดและติดตั้งให้ โดยท่านต้องเปิดแอปใหม่เอง" }</p>
                         </div>
                         <button type="button" class="btn btn-secondary" onclick={on_check_update}>

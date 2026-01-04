@@ -3,6 +3,7 @@ use crate::models::{Patient, TreatmentRecord, DrugItem, ClinicSettings};
 
 const KEY_PATIENTS: &str = "clinic_patients";
 const KEY_RECORDS: &str = "clinic_records";
+#[allow(dead_code)]
 const KEY_LAST_HN: &str = "clinic_last_hn";
 const KEY_DRUGS: &str = "clinic_drugs";
 const KEY_SETTINGS: &str = "clinic_settings";
@@ -85,6 +86,7 @@ impl Store {
     
 
 
+    #[allow(dead_code)]
     pub fn next_hn() -> String {
         let last_hn: u32 = LocalStorage::get(KEY_LAST_HN).unwrap_or(0);
         let next = last_hn + 1;

@@ -137,11 +137,11 @@ pub fn register() -> Html {
                                     title.set(input.value());
                                 })
                             }>
-                                <option value="นาย">{ "นาย" }</option>
-                                <option value="นาง">{ "นาง" }</option>
-                                <option value="นางสาว">{ "นางสาว" }</option>
-                                <option value="เด็กชาย">{ "เด็กชาย" }</option>
-                                <option value="เด็กหญิง">{ "เด็กหญิง" }</option>
+                                <option value="นาย" selected={*title == "นาย"}>{ "นาย" }</option>
+                                <option value="นาง" selected={*title == "นาง"}>{ "นาง" }</option>
+                                <option value="นางสาว" selected={*title == "นางสาว"}>{ "นางสาว" }</option>
+                                <option value="เด็กชาย" selected={*title == "เด็กชาย"}>{ "เด็กชาย" }</option>
+                                <option value="เด็กหญิง" selected={*title == "เด็กหญิง"}>{ "เด็กหญิง" }</option>
                             </select>
                         </div>
                         

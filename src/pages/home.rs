@@ -28,6 +28,9 @@ pub fn home() -> Html {
     let total_records = records.len();
     let total_revenue: f64 = records.iter().map(|r| r.price).sum();
     let today_revenue = Store::get_today_revenue();
+    // Fix -0.0 issue: convert negative zero to positive zero
+    let today_revenue = if today_revenue == 0.0 { 0.0_f64 } else { today_revenue.max(0.0) };
+    let total_revenue = if total_revenue == 0.0 { 0.0_f64 } else { total_revenue.max(0.0) };
     let today_patients = Store::get_today_patient_count();
     
     let current_date = format_thai_date();
@@ -127,7 +130,7 @@ pub fn home() -> Html {
                             <div>
                                 <div class="history-item-label">{ "รายได้เฉลี่ยต่อครั้ง" }</div>
                                 <div style="font-size: 2rem; font-weight: 700; color: var(--color-success);">
-                                    { format!("฿{:.0}", if total_records > 0 { total_revenue / total_records as f64 } else { 0.0 }) }
+                                    { format!("฿{:.0}", if total_records > 0 { (total_revenue / total_records as f64).max(0.0) } else { 0.0 }) }
                                 </div>
                             </div>
                         </div>
