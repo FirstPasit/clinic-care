@@ -512,6 +512,29 @@ pub fn treatment(props: &Props) -> Html {
                                                 </div>
                                             </div>
                                             
+                                            // Usage for sticker (NEW)
+                                            <div class="form-group">
+                                                <label class="form-label">{ "💊 คำแนะนำยา (สำหรับสติกเกอร์)" }</label>
+                                                <input type="text" value={item.usage.clone()} 
+                                                    placeholder="เช่น รับประทานหลังอาหาร, ทาบริเวณที่เจ็บ"
+                                                    style={if !item.usage.is_empty() { "border-color: #059669; background: #f0fdf4;" } else { "" }}
+                                                    oninput={{
+                                                        let prescriptions = prescriptions_for_update.clone();
+                                                        move |e: InputEvent| {
+                                                            let mut current = (*prescriptions).clone();
+                                                            if let Some(rx) = current.get_mut(i) {
+                                                                rx.usage = e.target_unchecked_into::<HtmlInputElement>().value();
+                                                            }
+                                                            prescriptions.set(current);
+                                                        }
+                                                    }} />
+                                                { if !item.usage.is_empty() {
+                                                    html! { <small style="color: #059669;">{ "✅ จะแสดงในสติกเกอร์" }</small> }
+                                                } else {
+                                                    html! { <small style="color: #666;">{ "ถ้าไม่กรอก จะไม่แสดงในสติกเกอร์" }</small> }
+                                                }}
+                                            </div>
+                                            
                                             // Warning
                                             <div class="form-group">
                                                 <label class="form-label">{ "⚠️ คำเตือน (สำหรับสติกเกอร์)" }</label>

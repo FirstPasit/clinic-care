@@ -15,7 +15,7 @@ pub enum Language {
 struct StickerLabels {
     drug_name: &'static str,
     date: &'static str,
-    indication: &'static str,
+    usage_label: &'static str,       // วิธีใช้/คำแนะนำ
     dosage: &'static str,
     tablets: &'static str,
     times_per_day: &'static str,
@@ -41,7 +41,7 @@ fn get_labels(lang: &Language) -> StickerLabels {
         Language::Thai => StickerLabels {
             drug_name: "ชื่อยา",
             date: "วันที่",
-            indication: "ข้อบ่งใช้",
+            usage_label: "วิธีใช้",
             dosage: "กินครั้งละ",
             tablets: "เม็ด/ช้อนชา/มล.",
             times_per_day: "วันละ",
@@ -64,7 +64,7 @@ fn get_labels(lang: &Language) -> StickerLabels {
         Language::English => StickerLabels {
             drug_name: "Drug Name",
             date: "Date",
-            indication: "Indication",
+            usage_label: "Usage",
             dosage: "Take",
             tablets: "tablet(s)/tsp/ml",
             times_per_day: "times/day",
@@ -87,7 +87,7 @@ fn get_labels(lang: &Language) -> StickerLabels {
         Language::Myanmar => StickerLabels {
             drug_name: "ဆေးအမည်",
             date: "ရက်စွဲ",
-            indication: "သုံးစွဲရန်",
+            usage_label: "သုံးစွဲရန်",
             dosage: "တစ်ကြိမ်",
             tablets: "လုံး/ဇွန်း/မီလီ",
             times_per_day: "ကြိမ်/နေ့",
@@ -234,10 +234,10 @@ pub fn sticker(props: &Props) -> Html {
                         </div>
                     </div>
                     
-                    // Row 2: Indication
+                    // Row 2: Usage/คำแนะนำ
                     <div style="border-bottom: 1px solid #ccc; padding-bottom: 1mm; margin-bottom: 1mm;">
-                        <span style="font-weight: bold;">{ &labels.indication }</span>
-                        <span style="margin-left: 2mm;">{ &drug.usage }</span>
+                        <span style="font-weight: bold;">{ &labels.usage_label }</span>
+                        <span style="margin-left: 2mm;">{ if drug.usage.is_empty() { "-".to_string() } else { drug.usage.clone() } }</span>
                     </div>
                     
                     // Row 3: Dosage

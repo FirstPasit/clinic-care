@@ -39,6 +39,14 @@ impl Store {
         let _ = LocalStorage::set(KEY_RECORDS, records);
     }
     
+    pub fn update_patient(updated: Patient) {
+        let mut patients = Self::get_patients();
+        if let Some(pos) = patients.iter().position(|p| p.id == updated.id) {
+            patients[pos] = updated;
+            let _ = LocalStorage::set(KEY_PATIENTS, patients);
+        }
+    }
+    
 
 
     // ========== Treatment Records ==========

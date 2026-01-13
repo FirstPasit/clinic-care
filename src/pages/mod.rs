@@ -9,6 +9,7 @@ pub mod drugs;
 pub mod sticker;
 pub mod report;
 pub mod settings;
+pub mod edit_patient;
 
 pub use home::Home;
 pub use register::Register;
@@ -21,3 +22,4 @@ pub use drugs::Drugs;
 pub use sticker::Sticker;
 pub use report::Report;
 pub use settings::Settings;
+pub use edit_patient::EditPatient;

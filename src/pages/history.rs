@@ -48,6 +48,9 @@ pub fn history(props: &Props) -> Html {
                     <p class="page-subtitle">{ format!("{}{} {} • HN: {}", p.title, p.first_name, p.last_name, p.hn) }</p>
                 </div>
                 <div class="flex gap-3">
+                    <Link<Route> to={Route::EditPatient { id: props.id.clone() }} classes="btn btn-warning btn-lg">
+                        { "✏️ แก้ไขข้อมูล" }
+                    </Link<Route>>
                     <button class="btn btn-danger" onclick={
                         let id = props.id.clone();
                         let navigator = navigator.clone();

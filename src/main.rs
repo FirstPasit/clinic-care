@@ -6,7 +6,7 @@ mod store;
 mod pages;
 mod components;
 
-use pages::{Home, Register, Search, Treatment, History, Document, NotFound, Drugs, Sticker, Report, Settings};
+use pages::{Home, Register, Search, Treatment, History, Document, NotFound, Drugs, Sticker, Report, Settings, EditPatient};
 use components::ToastProvider;
 use store::Store;
 
@@ -22,6 +22,8 @@ pub enum Route {
     Treatment { id: String },
     #[at("/history/:id")]
     History { id: String },
+    #[at("/edit-patient/:id")]
+    EditPatient { id: String },
     #[at("/document/:doc_type/:id")]
     Document { doc_type: String, id: String },
     #[at("/drugs")]
@@ -44,6 +46,7 @@ fn switch(routes: Route) -> Html {
         Route::Search => html! { <Search /> },
         Route::Treatment { id } => html! { <Treatment id={id} /> },
         Route::History { id } => html! { <History id={id} /> },
+        Route::EditPatient { id } => html! { <EditPatient patient_id={id} /> },
         Route::Document { doc_type, id } => html! { <Document doc_type={doc_type} id={id} /> },
         Route::Drugs => html! { <Drugs /> },
         Route::Sticker { record_id, drug_index } => html! { <Sticker record_id={record_id} drug_index={drug_index} /> },

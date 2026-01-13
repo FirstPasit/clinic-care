@@ -11,6 +11,8 @@ pub struct Patient {
     pub last_name: String,
     pub birth_date: Option<NaiveDate>,
     #[serde(default)]
+    pub age: Option<u32>,           // อายุ (ปี)
+    #[serde(default)]
     pub blood_group: String,
     #[serde(default)]
     pub underlying_disease: String, // โรคประจำตัว
