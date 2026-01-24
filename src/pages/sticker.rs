@@ -327,11 +327,16 @@ pub fn sticker(props: &Props) -> Html {
                         </label>
                     </div>
                     
-                    // Warning if any
+                    // Warning if any - ENHANCED display
                     { if !drug.warning.is_empty() {
                         html! {
-                            <div style="margin-top: 1mm; padding: 1mm; background: #ffcccc; border: 1px solid #cc0000; border-radius: 2px; text-align: center; font-weight: bold; color: #cc0000;">
-                                { format!("⚠️ {}", drug.warning) }
+                            <div style="margin-top: 2mm; padding: 2mm; background: #fff0f0; border: 2px solid #dc0000; border-radius: 3px;">
+                                <div style="display: flex; align-items: center; gap: 2mm;">
+                                    <span style="font-size: 1.2em;">{ "⚠️" }</span>
+                                    <span style="font-weight: bold; color: #dc0000; font-size: 1.05em;">
+                                        { &drug.warning }
+                                    </span>
+                                </div>
                             </div>
                         }
                     } else { html! {} }}

@@ -57,6 +57,13 @@ pub fn report() -> Html {
     if !months.contains(&current_month) {
         months.insert(0, current_month);
     }
+    
+    // Monthly expenses
+    let year_i32: i32 = selected_month.split('-').next().unwrap_or("2026").parse().unwrap_or(2026);
+    let month_u32: u32 = selected_month.split('-').nth(1).unwrap_or("1").parse().unwrap_or(1);
+    let monthly_expenses = Store::get_monthly_expenses(year_i32, month_u32);
+    let total_expense: f64 = monthly_expenses.iter().map(|e| e.amount).sum();
+    let net_profit = total_revenue - total_expense;
 
     html! {
         <>
@@ -184,6 +191,67 @@ pub fn report() -> Html {
                             </table>
                         }
                     }}
+                </div>
+            </div>
+            
+            // Daily Revenue Chart (Simple CSS bar chart)
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h3 class="card-title">{ "📈 รายได้รายวัน" }</h3>
+                </div>
+                { if daily_revenue.is_empty() {
+                    html! { <p class="text-muted">{ "ไม่มีข้อมูล" }</p> }
+                } else {
+                    let max_revenue: f64 = daily_revenue.values().cloned().fold(0.0_f64, f64::max);
+                    let mut days: Vec<(String, f64, u32)> = daily_revenue.iter()
+                        .map(|(d, r)| (d.clone(), *r, *daily_visits.get(d).unwrap_or(&0)))
+                        .collect();
+                    days.sort_by(|a, b| a.0.cmp(&b.0));
+                    
+                    html! {
+                        <div style="display: flex; align-items: flex-end; gap: 4px; height: 200px; padding: 10px 0;">
+                            { for days.iter().map(|(day, revenue, visits)| {
+                                let height = if max_revenue > 0.0 { (*revenue / max_revenue * 160.0).max(20.0) } else { 20.0 };
+                                html! {
+                                    <div style="display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px;">
+                                        <div style="font-size: 0.7rem; color: var(--color-success); font-weight: bold;">
+                                            { format!("฿{:.0}", revenue) }
+                                        </div>
+                                        <div style={format!("width: 100%; height: {}px; background: linear-gradient(to top, var(--color-primary), var(--color-accent)); border-radius: 4px 4px 0 0; margin: 4px 0;", height)} 
+                                             title={format!("วันที่ {}: ฿{:.0} ({} ครั้ง)", day, revenue, visits)}>
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: #666;">{ day }</div>
+                                        <div style="font-size: 0.65rem; color: #999;">{ format!("{}ครั้ง", visits) }</div>
+                                    </div>
+                                }
+                            })}
+                        </div>
+                    }
+                }}
+            </div>
+            
+            // Monthly Summary with Expenses
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h3 class="card-title">{ "💵 สรุปกำไร/ขาดทุน" }</h3>
+                </div>
+                <div class="grid grid-cols-3 gap-4" style="text-align: center;">
+                    <div style="padding: 1.5rem; background: #f0fdf4; border-radius: 12px;">
+                        <div style="font-size: 0.9rem; color: #16a34a;">{ "รายได้" }</div>
+                        <div style="font-size: 2rem; font-weight: bold; color: #16a34a;">{ format!("฿{:.0}", total_revenue) }</div>
+                    </div>
+                    <div style="padding: 1.5rem; background: #fef2f2; border-radius: 12px;">
+                        <div style="font-size: 0.9rem; color: #dc2626;">{ "ค่าใช้จ่าย" }</div>
+                        <div style="font-size: 2rem; font-weight: bold; color: #dc2626;">{ format!("฿{:.0}", total_expense) }</div>
+                    </div>
+                    <div style={format!("padding: 1.5rem; background: {}; border-radius: 12px;", if net_profit >= 0.0 { "#f0fdf4" } else { "#fef2f2" })}>
+                        <div style={format!("font-size: 0.9rem; color: {};", if net_profit >= 0.0 { "#16a34a" } else { "#dc2626" })}>
+                            { if net_profit >= 0.0 { "กำไรสุทธิ ✅" } else { "ขาดทุน ❌" } }
+                        </div>
+                        <div style={format!("font-size: 2rem; font-weight: bold; color: {};", if net_profit >= 0.0 { "#16a34a" } else { "#dc2626" })}>
+                            { format!("฿{:.0}", net_profit.abs()) }
+                        </div>
+                    </div>
                 </div>
             </div>
             

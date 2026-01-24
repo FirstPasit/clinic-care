@@ -1,5 +1,5 @@
 use gloo::storage::{LocalStorage, Storage};
-use crate::models::{Patient, TreatmentRecord, DrugItem, ClinicSettings};
+use crate::models::{Patient, TreatmentRecord, DrugItem, ClinicSettings, Expense, DrugPurchase, Appointment};
 
 const KEY_PATIENTS: &str = "clinic_patients";
 const KEY_RECORDS: &str = "clinic_records";
@@ -7,6 +7,9 @@ const KEY_RECORDS: &str = "clinic_records";
 const KEY_LAST_HN: &str = "clinic_last_hn";
 const KEY_DRUGS: &str = "clinic_drugs";
 const KEY_SETTINGS: &str = "clinic_settings";
+const KEY_EXPENSES: &str = "clinic_expenses";
+const KEY_DRUG_PURCHASES: &str = "clinic_drug_purchases";
+const KEY_APPOINTMENTS: &str = "clinic_appointments";
 
 
 pub struct Store;
@@ -182,6 +185,142 @@ impl Store {
         Self::get_records()
             .into_iter()
             .filter(|r| r.date.with_timezone(&Local).date_naive() == today)
+            .count()
+    }
+    
+    // ========== Expenses ==========
+    pub fn get_expenses() -> Vec<Expense> {
+        LocalStorage::get(KEY_EXPENSES).unwrap_or_else(|_| Vec::new())
+    }
+    
+    pub fn save_expense(expense: Expense) {
+        let mut expenses = Self::get_expenses();
+        expenses.push(expense);
+        let _ = LocalStorage::set(KEY_EXPENSES, expenses);
+    }
+    
+    pub fn delete_expense(expense_id: &str) {
+        let expenses: Vec<Expense> = Self::get_expenses()
+            .into_iter()
+            .filter(|e| e.id != expense_id)
+            .collect();
+        let _ = LocalStorage::set(KEY_EXPENSES, expenses);
+    }
+    
+    pub fn get_monthly_expenses(year: i32, month: u32) -> Vec<Expense> {
+        use chrono::Datelike;
+        Self::get_expenses()
+            .into_iter()
+            .filter(|e| {
+                let d = e.date.with_timezone(&chrono::Local);
+                d.year() == year && d.month() == month
+            })
+            .collect()
+    }
+    
+    // ========== Drug Purchases ==========
+    pub fn get_drug_purchases() -> Vec<DrugPurchase> {
+        LocalStorage::get(KEY_DRUG_PURCHASES).unwrap_or_else(|_| Vec::new())
+    }
+    
+    pub fn save_drug_purchase(purchase: DrugPurchase) {
+        // Also increase drug stock
+        let mut drugs = Self::get_drugs();
+        if let Some(pos) = drugs.iter().position(|d| d.id == purchase.drug_id) {
+            drugs[pos].stock += purchase.quantity;
+            // Update expiry date if provided
+            if purchase.expiry_date.is_some() {
+                drugs[pos].expiry_date = purchase.expiry_date;
+            }
+            let _ = LocalStorage::set(KEY_DRUGS, drugs);
+        }
+        
+        let mut purchases = Self::get_drug_purchases();
+        purchases.push(purchase);
+        let _ = LocalStorage::set(KEY_DRUG_PURCHASES, purchases);
+    }
+    
+    pub fn get_purchases_by_drug(drug_id: &str) -> Vec<DrugPurchase> {
+        Self::get_drug_purchases()
+            .into_iter()
+            .filter(|p| p.drug_id == drug_id)
+            .collect()
+    }
+    
+    // ========== Appointments ==========
+    pub fn get_appointments() -> Vec<Appointment> {
+        LocalStorage::get(KEY_APPOINTMENTS).unwrap_or_else(|_| Vec::new())
+    }
+    
+    pub fn save_appointment(appointment: Appointment) {
+        let mut appointments = Self::get_appointments();
+        appointments.push(appointment);
+        let _ = LocalStorage::set(KEY_APPOINTMENTS, appointments);
+    }
+    
+    pub fn update_appointment(updated: Appointment) {
+        let mut appointments = Self::get_appointments();
+        if let Some(pos) = appointments.iter().position(|a| a.id == updated.id) {
+            appointments[pos] = updated;
+            let _ = LocalStorage::set(KEY_APPOINTMENTS, appointments);
+        }
+    }
+    
+    pub fn delete_appointment(appointment_id: &str) {
+        let appointments: Vec<Appointment> = Self::get_appointments()
+            .into_iter()
+            .filter(|a| a.id != appointment_id)
+            .collect();
+        let _ = LocalStorage::set(KEY_APPOINTMENTS, appointments);
+    }
+    
+    pub fn get_today_appointments() -> Vec<Appointment> {
+        let today = chrono::Local::now().date_naive();
+        Self::get_appointments()
+            .into_iter()
+            .filter(|a| a.date == today && a.status == "pending")
+            .collect()
+    }
+    
+    pub fn get_appointments_by_date(date: chrono::NaiveDate) -> Vec<Appointment> {
+        Self::get_appointments()
+            .into_iter()
+            .filter(|a| a.date == date)
+            .collect()
+    }
+    
+    // ========== Records by Date Range ==========
+    pub fn get_records_by_date_range(start: chrono::NaiveDate, end: chrono::NaiveDate) -> Vec<TreatmentRecord> {
+        use chrono::Local;
+        Self::get_records()
+            .into_iter()
+            .filter(|r| {
+                let d = r.date.with_timezone(&Local).date_naive();
+                d >= start && d <= end
+            })
+            .collect()
+    }
+    
+    pub fn get_monthly_revenue(year: i32, month: u32) -> f64 {
+        use chrono::Datelike;
+        Self::get_records()
+            .into_iter()
+            .filter(|r| {
+                let d = r.date.with_timezone(&chrono::Local);
+                d.year() == year && d.month() == month
+            })
+            .map(|r| r.price)
+            .sum()
+    }
+    
+    pub fn get_monthly_patient_count(year: i32, month: u32) -> usize {
+        use chrono::Datelike;
+        Self::get_records()
+            .into_iter()
+            .filter(|r| {
+                let d = r.date.with_timezone(&chrono::Local);
+                d.year() == year && d.month() == month
+            })
             .count()
     }
 }

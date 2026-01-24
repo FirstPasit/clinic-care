@@ -6,7 +6,7 @@ mod store;
 mod pages;
 mod components;
 
-use pages::{Home, Register, Search, Treatment, History, Document, NotFound, Drugs, Sticker, Report, Settings, EditPatient};
+use pages::{Home, Register, Search, Treatment, History, Document, NotFound, Drugs, Sticker, Report, Settings, EditPatient, Expenses, Appointments};
 use components::ToastProvider;
 use store::Store;
 
@@ -32,6 +32,10 @@ pub enum Route {
     Sticker { record_id: String, drug_index: usize },
     #[at("/report")]
     Report,
+    #[at("/expenses")]
+    Expenses,
+    #[at("/appointments")]
+    Appointments,
     #[at("/settings")]
     Settings,
     #[not_found]
@@ -51,6 +55,8 @@ fn switch(routes: Route) -> Html {
         Route::Drugs => html! { <Drugs /> },
         Route::Sticker { record_id, drug_index } => html! { <Sticker record_id={record_id} drug_index={drug_index} /> },
         Route::Report => html! { <Report /> },
+        Route::Expenses => html! { <Expenses /> },
+        Route::Appointments => html! { <Appointments /> },
         Route::Settings => html! { <Settings /> },
         Route::NotFound => html! { <NotFound /> },
     }
@@ -107,10 +113,22 @@ fn app() -> Html {
                             </div>
                             
                             <div class="nav-section">
-                                <div class="nav-section-title">{ "รายงาน" }</div>
+                                <div class="nav-section-title">{ "การเงิน" }</div>
                                 <Link<Route> to={Route::Report} classes="nav-link">
                                     <span class="nav-link-icon">{ "📊" }</span>
                                     { "รายงานรายเดือน" }
+                                </Link<Route>>
+                                <Link<Route> to={Route::Expenses} classes="nav-link">
+                                    <span class="nav-link-icon">{ "💰" }</span>
+                                    { "ค่าใช้จ่าย" }
+                                </Link<Route>>
+                            </div>
+                            
+                            <div class="nav-section">
+                                <div class="nav-section-title">{ "นัดหมาย" }</div>
+                                <Link<Route> to={Route::Appointments} classes="nav-link">
+                                    <span class="nav-link-icon">{ "🗓️" }</span>
+                                    { "นัดหมายผู้ป่วย" }
                                 </Link<Route>>
                             </div>
                             

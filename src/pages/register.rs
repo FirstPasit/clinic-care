@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
-use chrono::Utc;
+use chrono::{Utc, Datelike};
 use uuid::Uuid;
 use crate::models::Patient;
 use crate::store::Store;
@@ -195,22 +195,42 @@ pub fn register() -> Html {
                                 } />
                         </div>
                         
-                        // Birth Date (Optional)
+                        // Birth Date (Optional) - Auto-calculate age
                         <div class="form-group">
                             <label class="form-label">{ "วันเกิด (ไม่บังคับ)" }</label>
                             <input type="date" value={(*birth_date).clone()}
-                                oninput={
+                                oninput={{
                                     let birth_date = birth_date.clone();
+                                    let age = age.clone();
                                     Callback::from(move |e: InputEvent| {
                                         let input: HtmlInputElement = e.target_unchecked_into();
-                                        birth_date.set(input.value());
+                                        let bd_str = input.value();
+                                        birth_date.set(bd_str.clone());
+                                        
+                                        // Auto-calculate age from birth date
+                                        if let Ok(bd) = chrono::NaiveDate::parse_from_str(&bd_str, "%Y-%m-%d") {
+                                            let today = chrono::Local::now().date_naive();
+                                            let mut calculated_age = today.year() - bd.year();
+                                            // Adjust if birthday hasn't occurred this year
+                                            if today.month() < bd.month() || (today.month() == bd.month() && today.day() < bd.day()) {
+                                                calculated_age -= 1;
+                                            }
+                                            if calculated_age >= 0 {
+                                                age.set(calculated_age.to_string());
+                                            }
+                                        }
                                     })
-                                } />
+                                }} />
+                            <small style="color: #666;">{ "กรอกวันเกิดจะคำนวณอายุให้อัตโนมัติ" }</small>
                         </div>
                         
                         // Age (Optional)
                         <div class="form-group">
-                            <label class="form-label">{ "อายุ (ปี)" }</label>
+                            <label class="form-label">{ "อายุ (ปี)" }
+                                { if !(*birth_date).is_empty() {
+                                    html! { <span class="badge badge-success" style="margin-left: 0.5rem;">{ "คำนวณจากวันเกิด" }</span> }
+                                } else { html! {} }}
+                            </label>
                             <input type="number" min="0" max="150" value={(*age).clone()}
                                 placeholder="เช่น 35"
                                 oninput={

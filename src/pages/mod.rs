@@ -10,6 +10,8 @@ pub mod sticker;
 pub mod report;
 pub mod settings;
 pub mod edit_patient;
+pub mod expenses;
+pub mod appointments;
 
 pub use home::Home;
 pub use register::Register;
@@ -23,3 +25,5 @@ pub use sticker::Sticker;
 pub use report::Report;
 pub use settings::Settings;
 pub use edit_patient::EditPatient;
+pub use expenses::Expenses;
+pub use appointments::Appointments;

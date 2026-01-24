@@ -3,7 +3,6 @@ use crate::store::Store;
 use yew_router::prelude::Link;
 use crate::Route;
 use chrono::prelude::*;
-
 fn format_thai_date() -> String {
     let now = Local::now();
     let thai_days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -23,6 +22,7 @@ pub fn home() -> Html {
     let patients = Store::get_patients();
     let records = Store::get_records();
     let low_stock_drugs = Store::get_low_stock_drugs();
+    let expiring_drugs = Store::get_expiring_drugs();
     
     let total_patients = patients.len();
     let total_records = records.len();
@@ -51,11 +51,32 @@ pub fn home() -> Html {
             // Low stock alert
             { if !low_stock_drugs.is_empty() {
                 html! {
-                    <div class="alert alert-warning">
-                        <span class="alert-icon">{ "⚠️" }</span>
-                        <span>{ format!("มียาใกล้หมด {} รายการ - กรุณาสั่งซื้อเพิ่ม", low_stock_drugs.len()) }</span>
+                    <div class="alert alert-warning" style="margin-bottom: 0.5rem;">
+                        <span class="alert-icon">{ "📦" }</span>
+                        <span>{ format!("มียาสต็อกต่ำ {} รายการ: ", low_stock_drugs.len()) }
+                            { low_stock_drugs.iter().take(3).map(|d| d.name.clone()).collect::<Vec<_>>().join(", ") }
+                            { if low_stock_drugs.len() > 3 { format!(" และอีก {} รายการ", low_stock_drugs.len() - 3) } else { String::new() } }
+                        </span>
                         <Link<Route> to={Route::Drugs} classes="btn btn-warning btn-sm">
                             { "ดูรายการ →" }
+                        </Link<Route>>
+                    </div>
+                }
+            } else { html! {} }}
+            
+            // Expiring drugs alert
+            { if !expiring_drugs.is_empty() {
+                html! {
+                    <div class="alert alert-error" style="margin-bottom: 0.5rem;">
+                        <span class="alert-icon">{ "⏰" }</span>
+                        <span>{ format!("มียาใกล้หมดอายุ {} รายการ (ภายใน 30 วัน): ", expiring_drugs.len()) }
+                            { expiring_drugs.iter().take(3).map(|d| {
+                                let exp_str = d.expiry_date.map(|e| e.format("%d/%m/%y").to_string()).unwrap_or_default();
+                                format!("{} (หมด {})", d.name, exp_str)
+                            }).collect::<Vec<_>>().join(", ") }
+                        </span>
+                        <Link<Route> to={Route::Drugs} classes="btn btn-error btn-sm">
+                            { "ตรวจสอบ →" }
                         </Link<Route>>
                     </div>
                 }

@@ -161,3 +161,91 @@ impl Default for ClinicSettings {
     }
 }
 
+// ========== NEW: Clinic Expense ==========
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct Expense {
+    pub id: String,
+    pub date: DateTime<Utc>,
+    pub category: String,      // ค่าเช่า, ค่าน้ำ, ค่าไฟ, ค่ายา, อื่นๆ
+    pub description: String,
+    pub amount: f64,
+    pub note: String,
+}
+
+impl Default for Expense {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            date: Utc::now(),
+            category: "อื่นๆ".to_string(),
+            description: String::new(),
+            amount: 0.0,
+            note: String::new(),
+        }
+    }
+}
+
+// ========== NEW: Drug Purchase History ==========
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct DrugPurchase {
+    pub id: String,
+    pub drug_id: String,
+    pub drug_name: String,
+    pub date: DateTime<Utc>,
+    pub quantity: u32,
+    pub cost_per_unit: f64,
+    pub total_cost: f64,
+    pub lot_number: String,
+    pub expiry_date: Option<NaiveDate>,
+    pub supplier: String,
+    pub note: String,
+}
+
+impl Default for DrugPurchase {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            drug_id: String::new(),
+            drug_name: String::new(),
+            date: Utc::now(),
+            quantity: 0,
+            cost_per_unit: 0.0,
+            total_cost: 0.0,
+            lot_number: String::new(),
+            expiry_date: None,
+            supplier: String::new(),
+            note: String::new(),
+        }
+    }
+}
+
+// ========== NEW: Appointment ==========
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct Appointment {
+    pub id: String,
+    pub patient_id: String,
+    pub patient_name: String,
+    pub date: NaiveDate,
+    pub time: String,            // e.g., "10:00", "14:30"
+    pub reason: String,          // เหตุผลนัด
+    pub status: String,          // pending, completed, cancelled
+    pub note: String,
+}
+
+impl Default for Appointment {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            patient_id: String::new(),
+            patient_name: String::new(),
+            date: chrono::Local::now().date_naive(),
+            time: "09:00".to_string(),
+            reason: String::new(),
+            status: "pending".to_string(),
+            note: String::new(),
+        }
+    }
+}
