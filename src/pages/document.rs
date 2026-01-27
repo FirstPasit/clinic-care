@@ -216,13 +216,13 @@ pub fn document(props: &Props) -> Html {
                         </thead>
                         <tbody>
                             { for r.prescriptions.iter().enumerate().map(|(i, rx)| {
-                                let dosage_th = if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
+                                let dosage_th = if rx.morning > 0.0 || rx.noon > 0.0 || rx.evening > 0.0 || rx.before_bed > 0.0 {
                                     format!("เช้า {} กลางวัน {} เย็น {} ก่อนนอน {}", 
                                         rx.morning, rx.noon, rx.evening, rx.before_bed)
                                 } else {
                                     rx.usage.clone()
                                 };
-                                let dosage_en = if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
+                                let dosage_en = if rx.morning > 0.0 || rx.noon > 0.0 || rx.evening > 0.0 || rx.before_bed > 0.0 {
                                     format!("M:{} N:{} E:{} B:{}", rx.morning, rx.noon, rx.evening, rx.before_bed)
                                 } else {
                                     "As directed".to_string()

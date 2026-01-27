@@ -28,15 +28,15 @@ pub struct PrescriptionItem {
     pub amount: String,
     pub usage: String,
     pub duration_days: Option<u32>,
-    // New fields for drug sticker
+    // New fields for drug sticker - Changed to f64 for decimal support (e.g., 1.5 tsp)
     #[serde(default)]
-    pub morning: u32,
+    pub morning: f64,
     #[serde(default)]
-    pub noon: u32,
+    pub noon: f64,
     #[serde(default)]
-    pub evening: u32,
+    pub evening: f64,
     #[serde(default)]
-    pub before_bed: u32,
+    pub before_bed: f64,
     #[serde(default)]
     pub timing: String, // ก่อนอาหาร, หลังอาหาร, พร้อมอาหาร
     #[serde(default)]
@@ -50,10 +50,10 @@ impl Default for PrescriptionItem {
             amount: String::new(),
             usage: String::new(),
             duration_days: None,
-            morning: 0,
-            noon: 0,
-            evening: 0,
-            before_bed: 0,
+            morning: 0.0,
+            noon: 0.0,
+            evening: 0.0,
+            before_bed: 0.0,
             timing: "หลังอาหาร".to_string(),
             warning: String::new(),
         }

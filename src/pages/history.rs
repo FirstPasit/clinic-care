@@ -126,7 +126,7 @@ pub fn history(props: &Props) -> Html {
                                                                     <strong>{ &rx.name }</strong>
                                                                     { format!(" - {} ({})", rx.amount, 
                                                                         if rx.timing.is_empty() { "หลังอาหาร" } else { &rx.timing }) }
-                                                                    { if rx.morning > 0 || rx.noon > 0 || rx.evening > 0 || rx.before_bed > 0 {
+                                                                    { if rx.morning > 0.0 || rx.noon > 0.0 || rx.evening > 0.0 || rx.before_bed > 0.0 {
                                                                         html! {
                                                                             <span style="color: var(--color-accent); margin-left: 0.5rem;">
                                                                                 { format!("เช้า {} กลางวัน {} เย็น {} ก่อนนอน {}", 

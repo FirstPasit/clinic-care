@@ -242,7 +242,7 @@ pub fn expenses() -> Html {
                     }
                 } else {
                     html! {
-                        <table class="table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>{ "วันที่" }</th>

@@ -993,13 +993,12 @@ input.input-success:focus {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-md);
   margin: var(--space-4) 0;
-  overflow: hidden;
   box-sizing: border-box;
 }
 
 .sticker-small {
   width: 60mm;
-  height: 30mm;
+  min-height: 30mm;
   padding: 1.5mm;
 }
 
@@ -1031,7 +1030,7 @@ input.input-success:focus {
 
 .sticker-medium {
   width: 80mm;
-  height: 40mm;
+  min-height: 40mm;
   padding: 2mm;
 }
 
@@ -1059,7 +1058,7 @@ input.input-success:focus {
 
 .sticker-large {
   width: 100mm;
-  height: 50mm;
+  min-height: 55mm;
   padding: 3mm;
 }
 
@@ -1079,8 +1078,6 @@ input.input-success:focus {
 .sticker-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
 
 .sticker-drug-name {

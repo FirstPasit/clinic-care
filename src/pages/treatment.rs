@@ -400,13 +400,14 @@ pub fn treatment(props: &Props) -> Html {
                                             <div class="grid grid-cols-4 gap-4 mb-4">
                                                 <div class="dose-input-group">
                                                     <label>{ "🌅 เช้า" }</label>
-                                                    <input type="number" min="0" value={item.morning.to_string()}
+                                                    <input type="number" min="0" step="0.5" value={if item.morning == 0.0 { "".to_string() } else { format!("{}", item.morning) }}
+                                                        placeholder="0"
                                                         oninput={{
                                                             let prescriptions = prescriptions_for_update.clone();
                                                             move |e: InputEvent| {
                                                                 let mut current = (*prescriptions).clone();
                                                                 if let Some(rx) = current.get_mut(i) {
-                                                                    rx.morning = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0);
+                                                                    rx.morning = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0.0);
                                                                 }
                                                                 prescriptions.set(current);
                                                             }
@@ -414,13 +415,14 @@ pub fn treatment(props: &Props) -> Html {
                                                 </div>
                                                 <div class="dose-input-group">
                                                     <label>{ "☀️ กลางวัน" }</label>
-                                                    <input type="number" min="0" value={item.noon.to_string()}
+                                                    <input type="number" min="0" step="0.5" value={if item.noon == 0.0 { "".to_string() } else { format!("{}", item.noon) }}
+                                                        placeholder="0"
                                                         oninput={{
                                                             let prescriptions = prescriptions_for_update.clone();
                                                             move |e: InputEvent| {
                                                                 let mut current = (*prescriptions).clone();
                                                                 if let Some(rx) = current.get_mut(i) {
-                                                                    rx.noon = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0);
+                                                                    rx.noon = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0.0);
                                                                 }
                                                                 prescriptions.set(current);
                                                             }
@@ -428,13 +430,14 @@ pub fn treatment(props: &Props) -> Html {
                                                 </div>
                                                 <div class="dose-input-group">
                                                     <label>{ "🌆 เย็น" }</label>
-                                                    <input type="number" min="0" value={item.evening.to_string()}
+                                                    <input type="number" min="0" step="0.5" value={if item.evening == 0.0 { "".to_string() } else { format!("{}", item.evening) }}
+                                                        placeholder="0"
                                                         oninput={{
                                                             let prescriptions = prescriptions_for_update.clone();
                                                             move |e: InputEvent| {
                                                                 let mut current = (*prescriptions).clone();
                                                                 if let Some(rx) = current.get_mut(i) {
-                                                                    rx.evening = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0);
+                                                                    rx.evening = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0.0);
                                                                 }
                                                                 prescriptions.set(current);
                                                             }
@@ -442,13 +445,14 @@ pub fn treatment(props: &Props) -> Html {
                                                 </div>
                                                 <div class="dose-input-group">
                                                     <label>{ "🌙 ก่อนนอน" }</label>
-                                                    <input type="number" min="0" value={item.before_bed.to_string()}
+                                                    <input type="number" min="0" step="0.5" value={if item.before_bed == 0.0 { "".to_string() } else { format!("{}", item.before_bed) }}
+                                                        placeholder="0"
                                                         oninput={{
                                                             let prescriptions = prescriptions_for_update.clone();
                                                             move |e: InputEvent| {
                                                                 let mut current = (*prescriptions).clone();
                                                                 if let Some(rx) = current.get_mut(i) {
-                                                                    rx.before_bed = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0);
+                                                                    rx.before_bed = e.target_unchecked_into::<HtmlInputElement>().value().parse().unwrap_or(0.0);
                                                                 }
                                                                 prescriptions.set(current);
                                                             }

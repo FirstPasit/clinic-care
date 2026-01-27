@@ -161,12 +161,21 @@ pub fn sticker(props: &Props) -> Html {
     
     let labels = get_labels(&language);
     
-    // Calculate total doses per day
+    // Calculate total doses per day - now using f64 for decimal support
     let total_doses = drug.morning + drug.noon + drug.evening + drug.before_bed;
-    let dose_per_time = if drug.morning > 0 { drug.morning } 
-        else if drug.noon > 0 { drug.noon }
-        else if drug.evening > 0 { drug.evening }
+    let dose_per_time = if drug.morning > 0.0 { drug.morning } 
+        else if drug.noon > 0.0 { drug.noon }
+        else if drug.evening > 0.0 { drug.evening }
         else { drug.before_bed };
+    
+    // Helper function to format dose (hide decimal if whole number)
+    let format_dose = |dose: f64| -> String {
+        if dose == dose.floor() {
+            format!("{:.0}", dose)
+        } else {
+            format!("{:.1}", dose)
+        }
+    };
 
     html! {
         <div style="padding: 20px;">
@@ -240,13 +249,13 @@ pub fn sticker(props: &Props) -> Html {
                         <span style="margin-left: 2mm;">{ if drug.usage.is_empty() { "-".to_string() } else { drug.usage.clone() } }</span>
                     </div>
                     
-                    // Row 3: Dosage
+                    // Row 3: Dosage - with decimal support
                     <div style="border-bottom: 1px solid #ccc; padding-bottom: 1mm; margin-bottom: 1mm;">
                         <span style="font-weight: bold;">{ &labels.dosage }</span>
-                        <span style="margin-left: 2mm; text-decoration: underline;">{ dose_per_time }</span>
+                        <span style="margin-left: 2mm; text-decoration: underline;">{ format_dose(dose_per_time) }</span>
                         <span style="margin-left: 1mm;">{ &labels.tablets }</span>
                         <span style="margin-left: 3mm; font-weight: bold;">{ &labels.times_per_day }</span>
-                        <span style="margin-left: 2mm; text-decoration: underline;">{ if total_doses > 0 { total_doses.to_string() } else { "...".to_string() } }</span>
+                        <span style="margin-left: 2mm; text-decoration: underline;">{ if total_doses > 0.0 { format_dose(total_doses) } else { "...".to_string() } }</span>
                         <span style="margin-left: 1mm;">{ &labels.times }</span>
                     </div>
                     
@@ -274,26 +283,26 @@ pub fn sticker(props: &Props) -> Html {
                     // Row 5: Time of Day Checkboxes
                     <div style="display: flex; gap: 3mm; margin-bottom: 1mm; padding: 1mm; background: #e8e8d0; border-radius: 2px;">
                         <label style="display: flex; align-items: center; gap: 1mm;">
-                            <span style={if drug.morning > 0 { "font-weight: bold;" } else { "" }}>
-                                { if drug.morning > 0 { "●" } else { "○" } }
+                            <span style={if drug.morning > 0.0 { "font-weight: bold;" } else { "" }}>
+                                { if drug.morning > 0.0 { format!("● {}", format_dose(drug.morning)) } else { "○".to_string() } }
                             </span>
                             { &labels.morning }
                         </label>
                         <label style="display: flex; align-items: center; gap: 1mm;">
-                            <span style={if drug.noon > 0 { "font-weight: bold;" } else { "" }}>
-                                { if drug.noon > 0 { "●" } else { "○" } }
+                            <span style={if drug.noon > 0.0 { "font-weight: bold;" } else { "" }}>
+                                { if drug.noon > 0.0 { format!("● {}", format_dose(drug.noon)) } else { "○".to_string() } }
                             </span>
                             { &labels.noon }
                         </label>
                         <label style="display: flex; align-items: center; gap: 1mm;">
-                            <span style={if drug.evening > 0 { "font-weight: bold;" } else { "" }}>
-                                { if drug.evening > 0 { "●" } else { "○" } }
+                            <span style={if drug.evening > 0.0 { "font-weight: bold;" } else { "" }}>
+                                { if drug.evening > 0.0 { format!("● {}", format_dose(drug.evening)) } else { "○".to_string() } }
                             </span>
                             { &labels.evening }
                         </label>
                         <label style="display: flex; align-items: center; gap: 1mm;">
-                            <span style={if drug.before_bed > 0 { "font-weight: bold;" } else { "" }}>
-                                { if drug.before_bed > 0 { "●" } else { "○" } }
+                            <span style={if drug.before_bed > 0.0 { "font-weight: bold;" } else { "" }}>
+                                { if drug.before_bed > 0.0 { format!("● {}", format_dose(drug.before_bed)) } else { "○".to_string() } }
                             </span>
                             { &labels.before_bed }
                         </label>
