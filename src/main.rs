@@ -7,7 +7,7 @@ mod pages;
 mod components;
 
 use pages::{Home, Register, Search, Treatment, History, Document, NotFound, Drugs, Sticker, Report, Settings, EditPatient, Expenses, Appointments};
-use components::ToastProvider;
+use components::{ToastProvider, Sidebar};
 use store::Store;
 
 #[derive(Clone, Routable, PartialEq)]
@@ -75,72 +75,7 @@ fn app() -> Html {
         <ToastProvider>
             <BrowserRouter>
                 <div class="app-layout">
-                    <aside class="sidebar">
-                        <div class="sidebar-header">
-                            <div class="sidebar-logo">
-                                <div class="sidebar-logo-icon">{ "🏥" }</div>
-                                <span class="sidebar-logo-text">{ "คลินิก" }</span>
-                            </div>
-                        </div>
-                        
-                        <nav class="sidebar-nav">
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "หน้าหลัก" }</div>
-                                <Link<Route> to={Route::Home} classes="nav-link">
-                                    <span class="nav-link-icon">{ "🏠" }</span>
-                                    { "แดชบอร์ด" }
-                                </Link<Route>>
-                            </div>
-                            
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "ผู้ป่วย" }</div>
-                                <Link<Route> to={Route::Register} classes="nav-link">
-                                    <span class="nav-link-icon">{ "➕" }</span>
-                                    { "ลงทะเบียนใหม่" }
-                                </Link<Route>>
-                                <Link<Route> to={Route::Search} classes="nav-link">
-                                    <span class="nav-link-icon">{ "🔍" }</span>
-                                    { "ค้นหาผู้ป่วย" }
-                                </Link<Route>>
-                            </div>
-                            
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "คลังยา" }</div>
-                                <Link<Route> to={Route::Drugs} classes="nav-link">
-                                    <span class="nav-link-icon">{ "💊" }</span>
-                                    { "จัดการยา" }
-                                </Link<Route>>
-                            </div>
-                            
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "การเงิน" }</div>
-                                <Link<Route> to={Route::Report} classes="nav-link">
-                                    <span class="nav-link-icon">{ "📊" }</span>
-                                    { "รายงานรายเดือน" }
-                                </Link<Route>>
-                                <Link<Route> to={Route::Expenses} classes="nav-link">
-                                    <span class="nav-link-icon">{ "💰" }</span>
-                                    { "ค่าใช้จ่าย" }
-                                </Link<Route>>
-                            </div>
-                            
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "นัดหมาย" }</div>
-                                <Link<Route> to={Route::Appointments} classes="nav-link">
-                                    <span class="nav-link-icon">{ "🗓️" }</span>
-                                    { "นัดหมายผู้ป่วย" }
-                                </Link<Route>>
-                            </div>
-                            
-                            <div class="nav-section">
-                                <div class="nav-section-title">{ "ระบบ" }</div>
-                                <Link<Route> to={Route::Settings} classes="nav-link">
-                                    <span class="nav-link-icon">{ "⚙️" }</span>
-                                    { "ตั้งค่าคลินิก" }
-                                </Link<Route>>
-                            </div>
-                        </nav>
-                    </aside>
+                    <Sidebar />
                     
                     <main class="main-content">
                         <div class="page-container">

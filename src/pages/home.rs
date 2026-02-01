@@ -3,6 +3,7 @@ use crate::store::Store;
 use yew_router::prelude::Link;
 use crate::Route;
 use chrono::prelude::*;
+
 fn format_thai_date() -> String {
     let now = Local::now();
     let thai_days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
@@ -23,136 +24,190 @@ pub fn home() -> Html {
     let records = Store::get_records();
     let low_stock_drugs = Store::get_low_stock_drugs();
     let expiring_drugs = Store::get_expiring_drugs();
+    let today_appointments = Store::get_today_appointments();
     
     let total_patients = patients.len();
     let total_records = records.len();
     let total_revenue: f64 = records.iter().map(|r| r.price).sum();
     let today_revenue = Store::get_today_revenue();
-    // Fix -0.0 issue: convert negative zero to positive zero
     let today_revenue = if today_revenue == 0.0 { 0.0_f64 } else { today_revenue.max(0.0) };
     let total_revenue = if total_revenue == 0.0 { 0.0_f64 } else { total_revenue.max(0.0) };
-    let today_patients = Store::get_today_patient_count();
+    let today_patients_count = Store::get_today_patient_count();
     
     let current_date = format_thai_date();
 
     html! {
         <>
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">{ "🏠 แดชบอร์ด" }</h1>
-                    <p class="page-subtitle">{ "ยินดีต้อนรับ สรุปข้อมูลคลินิก" }</p>
+            // Header with greeting
+            <div class="dashboard-header">
+                <div class="dashboard-greeting">
+                    <h1 class="page-title">{ "🏠 สวัสดี" }</h1>
+                    <p class="page-subtitle">{ "ยินดีต้อนรับเข้าสู่ระบบคลินิก" }</p>
                 </div>
-                <div class="current-date" style="text-align: right; padding: 1rem; background: white; color: black; border: 1px solid #eee; border-radius: var(--radius-lg); font-size: 1.2rem; box-shadow: var(--shadow-sm);">
-                    <div style="font-size: 0.9rem; color: #666;">{ "📅 วันนี้" }</div>
-                    <div style="font-weight: bold; font-size: 1.3rem;">{ current_date }</div>
+                <div class="dashboard-date">
+                    <div class="date-icon">{ "📅" }</div>
+                    <div class="date-text">{ current_date }</div>
                 </div>
             </div>
             
-            // Low stock alert
-            { if !low_stock_drugs.is_empty() {
+            // Alerts section - compact
+            { if !low_stock_drugs.is_empty() || !expiring_drugs.is_empty() {
                 html! {
-                    <div class="alert alert-warning" style="margin-bottom: 0.5rem;">
-                        <span class="alert-icon">{ "📦" }</span>
-                        <span>{ format!("มียาสต็อกต่ำ {} รายการ: ", low_stock_drugs.len()) }
-                            { low_stock_drugs.iter().take(3).map(|d| d.name.clone()).collect::<Vec<_>>().join(", ") }
-                            { if low_stock_drugs.len() > 3 { format!(" และอีก {} รายการ", low_stock_drugs.len() - 3) } else { String::new() } }
-                        </span>
-                        <Link<Route> to={Route::Drugs} classes="btn btn-warning btn-sm">
-                            { "ดูรายการ →" }
-                        </Link<Route>>
+                    <div class="alerts-row">
+                        { if !low_stock_drugs.is_empty() {
+                            html! {
+                                <div class="alert-compact warning">
+                                    <span class="alert-icon">{ "📦" }</span>
+                                    <span>{ format!("ยาสต็อกต่ำ {} รายการ", low_stock_drugs.len()) }</span>
+                                    <Link<Route> to={Route::Drugs} classes="alert-link">{ "ดู →" }</Link<Route>>
+                                </div>
+                            }
+                        } else { html! {} }}
+                        { if !expiring_drugs.is_empty() {
+                            html! {
+                                <div class="alert-compact error">
+                                    <span class="alert-icon">{ "⏰" }</span>
+                                    <span>{ format!("ยาใกล้หมดอายุ {} รายการ", expiring_drugs.len()) }</span>
+                                    <Link<Route> to={Route::Drugs} classes="alert-link">{ "ดู →" }</Link<Route>>
+                                </div>
+                            }
+                        } else { html! {} }}
                     </div>
                 }
             } else { html! {} }}
             
-            // Expiring drugs alert
-            { if !expiring_drugs.is_empty() {
-                html! {
-                    <div class="alert alert-error" style="margin-bottom: 0.5rem;">
-                        <span class="alert-icon">{ "⏰" }</span>
-                        <span>{ format!("มียาใกล้หมดอายุ {} รายการ (ภายใน 30 วัน): ", expiring_drugs.len()) }
-                            { expiring_drugs.iter().take(3).map(|d| {
-                                let exp_str = d.expiry_date.map(|e| e.format("%d/%m/%y").to_string()).unwrap_or_default();
-                                format!("{} (หมด {})", d.name, exp_str)
-                            }).collect::<Vec<_>>().join(", ") }
-                        </span>
-                        <Link<Route> to={Route::Drugs} classes="btn btn-error btn-sm">
-                            { "ตรวจสอบ →" }
-                        </Link<Route>>
+            // Today's Stats - Clean 4-column grid
+            <div class="stats-grid-4">
+                <div class="stat-card-minimal">
+                    <div class="stat-icon accent">{ "👤" }</div>
+                    <div class="stat-info">
+                        <div class="stat-value">{ today_patients_count }</div>
+                        <div class="stat-label">{ "ผู้ป่วยวันนี้" }</div>
                     </div>
-                }
-            } else { html! {} }}
-            
-            // Stats Grid
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-icon accent">{ "📅" }</div>
-                    <div class="stat-card-value">{ today_patients }</div>
-                    <div class="stat-card-label">{ "ผู้ป่วยวันนี้" }</div>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-card-icon success">{ "💰" }</div>
-                    <div class="stat-card-value">{ format!("฿{:.0}", today_revenue) }</div>
-                    <div class="stat-card-label">{ "รายได้วันนี้" }</div>
+                <div class="stat-card-minimal">
+                    <div class="stat-icon success">{ "💵" }</div>
+                    <div class="stat-info">
+                        <div class="stat-value">{ format!("฿{:.0}", today_revenue) }</div>
+                        <div class="stat-label">{ "รายได้วันนี้" }</div>
+                    </div>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-card-icon accent">{ "👥" }</div>
-                    <div class="stat-card-value">{ total_patients }</div>
-                    <div class="stat-card-label">{ "ผู้ป่วยทั้งหมด" }</div>
+                <div class="stat-card-minimal">
+                    <div class="stat-icon">{ "👥" }</div>
+                    <div class="stat-info">
+                        <div class="stat-value">{ total_patients }</div>
+                        <div class="stat-label">{ "ผู้ป่วยทั้งหมด" }</div>
+                    </div>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-card-icon success">{ "📊" }</div>
-                    <div class="stat-card-value">{ format!("฿{:.0}", total_revenue) }</div>
-                    <div class="stat-card-label">{ "รายได้รวม" }</div>
+                <div class="stat-card-minimal">
+                    <div class="stat-icon success">{ "📈" }</div>
+                    <div class="stat-info">
+                        <div class="stat-value">{ format!("฿{:.0}", total_revenue) }</div>
+                        <div class="stat-label">{ "รายได้รวม" }</div>
+                    </div>
                 </div>
             </div>
             
-            // Quick Actions - BIG BUTTONS
-            <div class="card">
-                <div class="card-header">
-                    <div>
+            // Two column layout: Quick Actions + Today's Appointments
+            <div class="dashboard-grid">
+                // Quick Actions
+                <div class="card">
+                    <div class="card-header">
                         <h3 class="card-title">{ "⚡ ทางลัด" }</h3>
-                        <p class="card-subtitle">{ "กดปุ่มเพื่อเริ่มทำงานเลย" }</p>
+                    </div>
+                    <div class="quick-actions-grid">
+                        <Link<Route> to={Route::Search} classes="quick-btn">
+                            <span class="quick-btn-icon">{ "🔍" }</span>
+                            <span>{ "ค้นหาผู้ป่วย" }</span>
+                        </Link<Route>>
+                        
+                        <Link<Route> to={Route::Register} classes="quick-btn primary">
+                            <span class="quick-btn-icon">{ "➕" }</span>
+                            <span>{ "ลงทะเบียนใหม่" }</span>
+                        </Link<Route>>
+                        
+                        <Link<Route> to={Route::Drugs} classes="quick-btn">
+                            <span class="quick-btn-icon">{ "💊" }</span>
+                            <span>{ "คลังยา" }</span>
+                        </Link<Route>>
+                        
+                        <Link<Route> to={Route::Report} classes="quick-btn">
+                            <span class="quick-btn-icon">{ "📊" }</span>
+                            <span>{ "รายงาน" }</span>
+                        </Link<Route>>
                     </div>
                 </div>
                 
-                <div class="quick-actions">
-                    <Link<Route> to={Route::Search} classes="quick-action">
-                        <div class="quick-action-icon">{ "🔍" }</div>
-                        <span class="quick-action-label">{ "ค้นหาผู้ป่วย" }</span>
-                    </Link<Route>>
-                    
-                    <Link<Route> to={Route::Register} classes="quick-action">
-                        <div class="quick-action-icon">{ "➕" }</div>
-                        <span class="quick-action-label">{ "ลงทะเบียนใหม่" }</span>
-                    </Link<Route>>
-                    
-                    <Link<Route> to={Route::Drugs} classes="quick-action">
-                        <div class="quick-action-icon">{ "💊" }</div>
-                        <span class="quick-action-label">{ "คลังยา" }</span>
-                    </Link<Route>>
+                // Today's Appointments
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{ "🗓️ นัดหมายวันนี้" }</h3>
+                        <Link<Route> to={Route::Appointments} classes="btn btn-ghost btn-sm">
+                            { "ดูทั้งหมด →" }
+                        </Link<Route>>
+                    </div>
+                    { if today_appointments.is_empty() {
+                        html! {
+                            <div class="empty-state-minimal">
+                                <span class="empty-icon">{ "✨" }</span>
+                                <span>{ "ไม่มีนัดหมายวันนี้" }</span>
+                            </div>
+                        }
+                    } else {
+                        html! {
+                            <div class="appointments-list">
+                                { for today_appointments.iter().take(5).map(|apt| {
+                                    let patient = patients.iter().find(|p| p.id == apt.patient_id);
+                                    let patient_name = patient.map(|p| format!("{} {}", p.first_name, p.last_name))
+                                        .unwrap_or_else(|| "-".to_string());
+                                    html! {
+                                        <div class="appointment-item">
+                                            <div class="appointment-time">
+                                                <span class="time-icon">{ "🕐" }</span>
+                                                { &apt.time }
+                                            </div>
+                                            <div class="appointment-info">
+                                                <div class="appointment-name">{ patient_name }</div>
+                                                <div class="appointment-reason">{ &apt.reason }</div>
+                                            </div>
+                                            <span class="badge badge-warning">{ "รอ" }</span>
+                                        </div>
+                                    }
+                                })}
+                                { if today_appointments.len() > 5 {
+                                    html! {
+                                        <div class="more-link">
+                                            { format!("+ อีก {} นัด", today_appointments.len() - 5) }
+                                        </div>
+                                    }
+                                } else { html! {} }}
+                            </div>
+                        }
+                    }}
                 </div>
             </div>
             
-            // Treatment Stats
+            // Statistics Card
             { if total_records > 0 {
                 html! {
-                    <div class="card mt-6">
+                    <div class="card mt-4">
                         <div class="card-header">
                             <h3 class="card-title">{ "📊 สถิติการรักษา" }</h3>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <div class="history-item-label">{ "จำนวนการรักษาทั้งหมด" }</div>
-                                <div style="font-size: 2rem; font-weight: 700;">{ total_records } { " ครั้ง" }</div>
+                        <div class="stats-row">
+                            <div class="stat-box">
+                                <div class="stat-box-value">{ total_records }</div>
+                                <div class="stat-box-label">{ "การรักษาทั้งหมด" }</div>
                             </div>
-                            <div>
-                                <div class="history-item-label">{ "รายได้เฉลี่ยต่อครั้ง" }</div>
-                                <div style="font-size: 2rem; font-weight: 700; color: var(--color-success);">
-                                    { format!("฿{:.0}", if total_records > 0 { (total_revenue / total_records as f64).max(0.0) } else { 0.0 }) }
+                            <div class="stat-divider"></div>
+                            <div class="stat-box">
+                                <div class="stat-box-value text-success">
+                                    { format!("฿{:.0}", if total_records > 0 { total_revenue / total_records as f64 } else { 0.0 }) }
                                 </div>
+                                <div class="stat-box-label">{ "เฉลี่ยต่อครั้ง" }</div>
                             </div>
                         </div>
                     </div>
@@ -161,3 +216,4 @@ pub fn home() -> Html {
         </>
     }
 }
+

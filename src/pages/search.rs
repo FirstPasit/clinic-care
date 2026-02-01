@@ -48,13 +48,20 @@ pub fn search() -> Html {
                 
                 { if filtered_patients.is_empty() {
                     html! {
-                        <div class="empty-state">
-                            <div class="empty-state-icon">{ "👥" }</div>
+                        <div class="empty-state-interactive">
+                            <div class="empty-state-illustration">
+                                <span class="emoji">{ "👥" }</span>
+                            </div>
                             <h3 class="empty-state-title">{ "ไม่พบผู้ป่วย" }</h3>
-                            <p class="empty-state-text">{ "ลองค้นหาใหม่ หรือลงทะเบียนผู้ป่วยใหม่" }</p>
-                            <Link<Route> to={Route::Register} classes="btn btn-primary">
-                                { "ลงทะเบียนผู้ป่วยใหม่" }
-                            </Link<Route>>
+                            <p class="empty-state-description">
+                                { "ลองค้นหาด้วยชื่อ, HN, หรือเลขบัตรประชาชน" }<br/>
+                                { "หรือลงทะเบียนผู้ป่วยใหม่เข้าสู่ระบบ" }
+                            </p>
+                            <div class="empty-state-action">
+                                <Link<Route> to={Route::Register} classes="btn btn-primary btn-lg">
+                                    { "➕ ลงทะเบียนผู้ป่วยใหม่" }
+                                </Link<Route>>
+                            </div>
                         </div>
                     }
                 } else {
