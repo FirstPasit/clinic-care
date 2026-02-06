@@ -105,7 +105,7 @@ pub fn sidebar() -> Html {
             
             // Version footer
             <div class="sidebar-footer">
-                <div class="version-info">{ "v1.4.0" }</div>
+                <div class="version-info">{ "v1.4.1" }</div>
             </div>
         </aside>
     }

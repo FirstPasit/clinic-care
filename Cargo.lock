@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "clinic_app"
-version = "1.4.0"
+version = "1.4.1"
 dependencies = [
  "chrono",
  "gloo 0.11.0",

@@ -28,11 +28,27 @@ pub fn home() -> Html {
     
     let total_patients = patients.len();
     let total_records = records.len();
-    let total_revenue: f64 = records.iter().map(|r| r.price).sum();
+    
+    // Calculate THIS MONTH's revenue (reset each month)
+    let now = Local::now();
+    let current_month = now.month();
+    let current_year = now.year();
+    let monthly_revenue: f64 = records.iter()
+        .filter(|r| {
+            r.date.month() == current_month && r.date.year() == current_year
+        })
+        .map(|r| r.price)
+        .sum();
+    
     let today_revenue = Store::get_today_revenue();
     let today_revenue = if today_revenue == 0.0 { 0.0_f64 } else { today_revenue.max(0.0) };
-    let total_revenue = if total_revenue == 0.0 { 0.0_f64 } else { total_revenue.max(0.0) };
+    let monthly_revenue = if monthly_revenue == 0.0 { 0.0_f64 } else { monthly_revenue.max(0.0) };
     let today_patients_count = Store::get_today_patient_count();
+    
+    // Get current month name for label
+    let thai_months = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", 
+                       "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    let month_short = thai_months[current_month as usize];
     
     let current_date = format_thai_date();
 
@@ -105,8 +121,8 @@ pub fn home() -> Html {
                 <div class="stat-card-minimal">
                     <div class="stat-icon success">{ "📈" }</div>
                     <div class="stat-info">
-                        <div class="stat-value">{ format!("฿{:.0}", total_revenue) }</div>
-                        <div class="stat-label">{ "รายได้รวม" }</div>
+                        <div class="stat-value">{ format!("฿{:.0}", monthly_revenue) }</div>
+                        <div class="stat-label">{ format!("รายได้ {}", month_short) }</div>
                     </div>
                 </div>
             </div>
@@ -205,7 +221,7 @@ pub fn home() -> Html {
                             <div class="stat-divider"></div>
                             <div class="stat-box">
                                 <div class="stat-box-value text-success">
-                                    { format!("฿{:.0}", if total_records > 0 { total_revenue / total_records as f64 } else { 0.0 }) }
+                                    { format!("฿{:.0}", if total_records > 0 { monthly_revenue / total_records as f64 } else { 0.0 }) }
                                 </div>
                                 <div class="stat-box-label">{ "เฉลี่ยต่อครั้ง" }</div>
                             </div>
